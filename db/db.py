@@ -118,3 +118,12 @@ def get_device_config(id_device):
     """, 
     {"id_device": id_device}
     )
+
+def get_device_status(id_device):
+    return fetch_one(f"""
+    SELECT status 
+    FROM config
+    WHERE id_device=:id_device
+    """, 
+    {"id_device": id_device}
+    )[0]
