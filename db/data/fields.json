@@ -1,0 +1,37 @@
+{
+    "config_fields" : [
+        "id_device",
+        "id_protocol",
+        "status",
+        "bmi270_sampling",
+        "bmi270_acc_sensibility",
+        "bmi270_gyro_sensibility",
+        "bme688_sampling",
+        "discontinuous_time",
+        "port_tcp",
+        "port_udp",
+        "host_ip_addr",
+        "ssid",
+        "passwd"
+    ],
+    "esp32_data_fields" : [
+        "id_device",
+        "id_protocol",
+        "batt_level",
+        "timestamp",
+        "temp",
+        "press",
+        "hum",
+        "co",
+        "rms",
+        "amp_x",
+        "amp_y",
+        "amp_z",
+        "frec_x",
+        "frec_y",
+        "frec_z",
+        "acc_x",
+        "acc_y",
+        "acc_z"
+    ]
+}
