@@ -1,6 +1,8 @@
-from base64 import decode
 import socket
+
+from base64 import decode
 from ..utils.payload import MAX_PAYLOAD_SIZE, decode_payload
+from ..db import db
 
 def init_tcp_sever(host, port, id_protocol):
     """
@@ -17,11 +19,19 @@ def init_tcp_sever(host, port, id_protocol):
             print(f"Connected by {addr} to an ESP32")
             while True:
                 encoded_payload = conn.recv(MAX_PAYLOAD_SIZE)
-                decoded_paylodad = decode_payload(id_protocol, encoded_payload)
+                decoded_payload = decode_payload(id_protocol, encoded_payload)
 
-                device_id = decoded_paylodad['device_id']
-                if decoded_paylodad['status'] != CURRENT_STATUS[device_id]:
-                    # Enviar al client nueva config y luego cerrar sv.
+                device_id = decoded_payload['device_id']
+
+                current_status = db.get_device_status(device_id)
+                if decoded_payload['status'] != current_status:
+                    # Enviar al client nuevo status y luego cerrar sv.
+                    conn.send(int.to_bytes(current_status, byteorder="big", length=1))
                     break
+
+                else:
+                    # Enviar al cliente un ACK.
+                    conn.send(b'\x06')
                 
-                # Hacer cosas con el decoded_payload.
+                # Guardamos los datos enviados.
+                db.insert_esp32_data(**decoded_payload)

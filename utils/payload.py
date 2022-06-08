@@ -1,5 +1,5 @@
-from base64 import encode
-
+from datetime import datetime
+import struct
 
 MAX_PAYLOAD_SIZE = 19228
 
@@ -24,64 +24,64 @@ DATA_FIELDS = [
 ]
 
 def decode_header(payload_dict, encoded_payload):
-    payload_dict["id_device"] = encoded_payload[0:2]
-    payload_dict["mac"] = encoded_payload[2:8]
-    payload_dict["status"] = encoded_payload[8:9]
-    payload_dict["id_protocol"] = encoded_payload[9:10]
-    payload_dict["len_msg"] = encoded_payload[10:12]
+    payload_dict["id_device"] = int.from_bytes(encoded_payload[0:2], byteorder="big", signed=False)
+    payload_dict["mac"] = ":".join([b.hex() for b in encoded_payload[2:8]])
+    payload_dict["status"] = int.from_bytes(encoded_payload[8:9], byteorder="big", signed=False)
+    payload_dict["id_protocol"] = int.from_bytes(encoded_payload[9:10], byteorder="big", signed=False)
+    payload_dict["len_msg"] = int.from_bytes(encoded_payload[10:12], byteorder="big", signed=False)
 
 def decode_data(payload_dict, encoded_payload, id_protocol):
     for field in DATA_FIELDS:
         payload_dict[field] = None
     
     start = 12
-    payload_dict["val"] = encoded_payload[start:start+1]
+    payload_dict["val"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
     start += 1
-    encoded_payload["batt_level"] = encoded_payload[start:start+1]
+    encoded_payload["batt_level"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
     start += 1
-    payload_dict["timestamp"] = encoded_payload[start:start+4]
+    payload_dict["timestamp"] = datetime.now()
     start += 4
     
     if id_protocol == 0:
         return
     
-    payload_dict["temp"] = encoded_payload[start:start+1]
+    payload_dict["temp"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
     start += 1 
-    payload_dict["press"] = encoded_payload[start:start+4]
+    payload_dict["press"] = struct.unpack("f", encoded_payload[start:start+4])[0]
     start += 4 
-    payload_dict["hum"] = encoded_payload[start:start+1]
+    payload_dict["hum"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
     start += 1 
-    payload_dict["co"] = encoded_payload[start:start+4]
+    payload_dict["co"] = struct.unpack("f", encoded_payload[start:start+4])[0]
     start += 4
 
     if id_protocol == 1:
         return
     
     if id_protocol == 2 or id_protocol == 3:
-        payload_dict["rms"] = encoded_payload[start:start+4]
+        payload_dict["rms"] = struct.unpack("f", encoded_payload[start:start+4])[0]
         start += 4
 
         if (id_protocol == 2):
             return
 
-        payload_dict["amp_x"] = encoded_payload[start:start+4]
+        payload_dict["amp_x"] = struct.unpack("f", encoded_payload[start:start+4])[0]
         start += 4
-        payload_dict["frec_x"] = encoded_payload[start:start+4]
+        payload_dict["frec_x"] = struct.unpack("f", encoded_payload[start:start+4])[0]
         start += 4
-        payload_dict["amp_y"] = encoded_payload[start:start+4]
+        payload_dict["amp_y"] = struct.unpack("f", encoded_payload[start:start+4])[0]
         start += 4
-        payload_dict["frec_y"] = encoded_payload[start:start+4]
+        payload_dict["frec_y"] = struct.unpack("f", encoded_payload[start:start+4])[0]
         start += 4
-        payload_dict["amp_z"] = encoded_payload[start:start+4]
+        payload_dict["amp_z"] = struct.unpack("f", encoded_payload[start:start+4])[0]
         start += 4
-        payload_dict["frec_z"] = encoded_payload[start:start+4]
+        payload_dict["frec_z"] = struct.unpack("f", encoded_payload[start:start+4])[0]
         start += 4
     
     elif (id_protocol == 4):
         for i in range(2000):
-            payload_dict["acc_x"][i] = encoded_payload[start + i]
-            payload_dict["acc_y"][i] = encoded_payload[start + 6400 + i]
-            payload_dict["acc_z"][i] = encoded_payload[start + 2*6400 + i]
+            payload_dict["acc_x"][i] = struct.unpack("f", encoded_payload[start + i])[0]
+            payload_dict["acc_y"][i] = struct.unpack("f", encoded_payload[start + 6400 + i])[0]
+            payload_dict["acc_z"][i] = struct.unpack("f", encoded_payload[start + 2*6400 + i])[0]
         
     
 
