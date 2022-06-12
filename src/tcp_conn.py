@@ -33,5 +33,5 @@ def init_tcp_sever(host, port, id_protocol):
                     # Enviar al cliente un ACK.
                     conn.send(b'\x06')
                 
-                # Guardamos los datos enviados.
-                db.insert_esp32_data(**decoded_payload)
+                    # Guardamos los datos enviados.
+                    db.insert_esp32_data(**decoded_payload)
