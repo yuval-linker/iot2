@@ -12,7 +12,6 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_log.h"
-#include "nvs_flash.h"
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
@@ -47,7 +46,7 @@ void event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-void wifi_init(int ssid, int passwd)
+void wifi_init(char *ssid, char *passwd)
 {
     s_wifi_event_group = xEventGroupCreate();
 
@@ -74,14 +73,16 @@ void wifi_init(int ssid, int passwd)
 
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = ssid,
-            .password = passwd,
             /* Setting a password implies station will connect to all security modes including WEP/WPA.
              * However these modes are deprecated and not advisable to be used. Incase your Access point
              * doesn't support WPA2, these mode can be enabled by commenting below line */
 	     .threshold.authmode = WIFI_AUTH_WPA_PSK,
         },
     };
+    int ssid_len = strlen(ssid);
+    int passwd_len = strlen(passwd);
+    strncpy((char *)wifi_config.sta.ssid, ssid, ssid_len);
+    strncpy((char *)wifi_config.sta.password, passwd, passwd_len);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
     ESP_ERROR_CHECK(esp_wifi_start() );

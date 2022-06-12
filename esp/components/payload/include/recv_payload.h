@@ -33,6 +33,22 @@ typedef struct payload_s {
     payload_data_st data;
 } payload_st;
 
+typedef struct config_data_st {
+    char status;
+    char id_protocol;
+    int bmi270_sampling;
+    int bmi270_acc_sensibility;
+    int bmi270_gyro_sensibility;
+    int bme688_sampling;
+    int discontinous_time;
+    int tcp_port;
+    int udp_port;
+    int host_ip_addr;
+    unsigned char ssid[32];
+    unsigned char pass[32];
+} config_data_st;
+
 char decode_payload_header(unsigned char *payload, payload_header_st *header);
 void decode_payload_data(unsigned char *payload, unsigned char id_protocol, payload_data_st *data);
+void decode_config_data(unsigned char *payload, config_data_st *data);
 void recv_payload(unsigned char *payload, payload_st *decoded_payload);

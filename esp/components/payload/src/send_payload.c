@@ -2,7 +2,7 @@
 #include <math.h>
 
 // writes 11 bytes
-int set_header(int start, unsigned char *bytes, unsigned char id_protocol, unsigned short int id_device, unsigned char *mac) {
+int set_header(int start, unsigned char *bytes, unsigned char id_status, unsigned char id_protocol, unsigned short int id_device, unsigned char *mac) {
     int counter = start;
     from_unsigned_short_int_to_bytearray(counter, bytes, id_device);
     counter += 2;
@@ -10,6 +10,8 @@ int set_header(int start, unsigned char *bytes, unsigned char id_protocol, unsig
         from_char_to_bytearray(counter+i, bytes, mac[i]);
     }
     counter += 6;
+    from_char_to_bytearray(counter, bytes, id_status);
+    counter += 1;
     from_char_to_bytearray(counter, bytes, id_protocol);
     counter += 1;
     from_unsigned_short_int_to_bytearray(counter, bytes, MSG_LENS[id_protocol]);
@@ -84,21 +86,25 @@ int set_acc_sensor_data(int start, unsigned char *bytes) {
     return 19200;
 }
 
-void send_payload(unsigned char *payload, unsigned char id_protocol, unsigned short int id_device, unsigned char *mac) {
+void send_payload(unsigned char *payload, unsigned char id_status, unsigned char id_protocol, unsigned short int id_device, unsigned char *mac) {
     int start = 0;
-    start += set_header(start, payload, id_protocol, id_device, mac);
-    start += set_basic_data(start, payload);
-    if (id_protocol >= 1) {
-        start += set_thpc_sensor_data(start, payload);
-        if (id_protocol == 2) {
-            start += set_acc_kpi_data(start, payload, 1);
+    start += set_header(start, payload, id_status, id_protocol, id_device, mac);
+    if (id_protocol == 0) {
+        from_char_to_bytearray(start, payload, 1);
+    } else {
+        start += set_basic_data(start, payload);
+        if (id_protocol >= 2) {
+            start += set_thpc_sensor_data(start, payload);
+            if (id_protocol == 3) {
+                start += set_acc_kpi_data(start, payload, 1);
+            }
+            else if (id_protocol == 4) {
+                start += set_acc_kpi_data(start, payload, 0);
+            }
+            else if (id_protocol == 5) {
+                start += set_acc_sensor_data(start, payload);
+            }
         }
-        else if (id_protocol == 3) {
-            start += set_acc_kpi_data(start, payload, 0);
-        }
-        else if (id_protocol == 4) {
-            start += set_acc_sensor_data(start, payload);
-        }
-    }
+    } 
 }
 

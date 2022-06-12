@@ -44,7 +44,6 @@ acc_sensor_st Accelerometer_sensor() {
 
 thpc_sensor_st THPC_sensor() {
     thpc_sensor_st thpc_data = {
-    //  .temp = randfloat(TEMP_INF, TEMP_SUP),
         .temp = randint(TEMP_INF, TEMP_SUP),
         .hum = randint(HUM_INF, HUM_SUP),
         .press = randint(PRESS_INF, PRESS_SUP),
