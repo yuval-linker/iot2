@@ -1,3 +1,4 @@
 .vscode
 esp/build
 server/__pycache__
+venv

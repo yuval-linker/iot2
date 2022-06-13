@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets
-from ui import Ui_Dialog
-import button
-import ble
+from .gui.ui import Ui_Dialog
+from .gui import button
+from .src import ble_conn as ble
 
 
 if __name__ == "__main__":
