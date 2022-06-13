@@ -1,2 +1,4 @@
+.vscode
+esp/build
+server/__pycache__
 venv
-__pycache__
