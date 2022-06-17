@@ -323,8 +323,9 @@ int read_u32_NVS(uint32_t *data, int key)
             case ESP_ERR_NVS_NOT_FOUND:
                 ESP_LOGE(UTILS_TAG, "The value is not initialized yet!");
                 break;
-            default :
+            default:
                 ESP_LOGE(UTILS_TAG, "Error (%d) reading!", err);
+                break;
         }
         // Close
         nvs_close(my_handle);
@@ -337,6 +338,7 @@ void parse_and_save_config(unsigned char *payload)
     int err;
     config_data_st config;
     decode_config_data(payload, &config);
+
     err = write_int8_NVS(config.status, SYSTEM_STATUS);
     if (err < 0) {
         ESP_LOGE(UTILS_TAG, "Can't commit system status");

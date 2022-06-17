@@ -55,13 +55,13 @@ void tcp_config_task() {
   
   wifi_init(ssid, password); // Connect to wifi
 
-  int socket = tcp_connect(string_ip_addr, port); // Connect with TCP
+  int socket = tcp_client_connect(string_ip_addr, port); // Connect with TCP
   if (socket < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to open TCP socket");
     return;
   }
 
-  int len = tcp_recv(socket, recv_buffer, TCP_RECV_BUFFER_SIZE);
+  int len = tcp_client_recv(socket, recv_buffer, TCP_RECV_BUFFER_SIZE);
   if (len < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to receive config through TCP");
     return;
@@ -69,7 +69,7 @@ void tcp_config_task() {
 
   tcp_socket_close(socket);
 
-  parse_and_save_config(recv_buffer);
+  parse_and_save_config((unsigned char *)recv_buffer);
   ESP_LOGI(STATUS_TAG, "Config recieved and saved through TCP");
 }
 
@@ -78,7 +78,7 @@ void tcp_continous_task() {
   char *ssid, *password, *recv_buffer;
   unsigned char string_ip_addr[4];
   int port, ip_addr;
-  char id_protocol;
+  signed char id_protocol;
 
   // Read CONFIG for WIFI settings
   read_u32_NVS(ssid_len, SSID_LENGTH);
@@ -94,7 +94,7 @@ void tcp_continous_task() {
   
   wifi_init(ssid, password); // Connect to wifi
 
-  int socket = tcp_connect(string_ip_addr, port); // Connect with TCP
+  int socket = tcp_client_connect(string_ip_addr, port); // Connect with TCP
   if (socket < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to open TCP socket");
     return;
@@ -105,8 +105,8 @@ void tcp_continous_task() {
   char same_status = 1;
 
   while (same_status) {
-    tcp_send(socket, payload, payload_len, TCP_CONTINOUS_STATUS, id_protocol);
-    tcp_recv(socket, recv_buffer, 1);
+    tcp_client_send(socket, payload, payload_len, TCP_CONTINOUS_STATUS, id_protocol);
+    tcp_client_recv(socket, recv_buffer, 1);
     same_status = (*recv_buffer == STATUS_OK);
   }
 
@@ -120,7 +120,7 @@ void tcp_discontinous_task() {
   char *ssid, *password, *recv_buffer;
   unsigned char string_ip_addr[4];
   int port, ip_addr, sleep_time;
-  char id_protocol;
+  signed char id_protocol;
 
   // Read CONFIG for WIFI settings
   read_u32_NVS(ssid_len, SSID_LENGTH);
@@ -137,7 +137,7 @@ void tcp_discontinous_task() {
   
   wifi_init(ssid, password); // Connect to wifi
 
-  int socket = tcp_connect(string_ip_addr, port); // Connect with TCP
+  int socket = tcp_client_connect(string_ip_addr, port); // Connect with TCP
   if (socket < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to open TCP socket");
     return;
@@ -146,8 +146,8 @@ void tcp_discontinous_task() {
   const int payload_len = get_protocol_msg_length(id_protocol);
   unsigned char payload[payload_len];
 
-  tcp_send(socket, payload, payload_len, TCP_CONTINOUS_STATUS, id_protocol);
-  tcp_recv(socket, recv_buffer, 1);
+  tcp_client_send(socket, payload, payload_len, TCP_CONTINOUS_STATUS, id_protocol);
+  tcp_client_recv(socket, recv_buffer, 1);
 
   if (*recv_buffer == STATUS_OK) {
     deep_sleep_clk(sleep_time);
@@ -161,7 +161,8 @@ void tcp_discontinous_task() {
 void tcp_change_status_task()
 {
   int port, ip_addr;
-  char id_protocol, *recv_buffer;
+  signed char id_protocol; 
+  char *recv_buffer;
   unsigned char string_ip_addr[4];
 
   read_int32_NVS(&ip_addr, HOST_IP_ADDR);
@@ -171,7 +172,7 @@ void tcp_change_status_task()
   // Read CONFIG for message settings
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
   int socket;
-  socket = tcp_connect(string_ip_addr, port); // Connect with TCP
+  socket = tcp_client_connect(string_ip_addr, port); // Connect with TCP
   if (socket < 0) {
     xSemaphoreTake(mutex, portMAX_DELAY);
     task_errors = 1;
@@ -187,7 +188,7 @@ void tcp_change_status_task()
       return;
     }
     xSemaphoreGive(mutex);
-    int len = tcp_recv(socket, recv_buffer, 1);
+    int len = tcp_client_recv(socket, recv_buffer, 1);
     if (len >= 0) {
       break;
     }
@@ -206,7 +207,7 @@ void tcp_change_status_task()
 void udp_task()
 {
   int port, ip_addr;
-  char id_protocol, *recv_buffer;
+  signed char id_protocol;
   unsigned char string_ip_addr[4];
 
   read_int32_NVS(&ip_addr, HOST_IP_ADDR);
@@ -216,7 +217,7 @@ void udp_task()
   // Read CONFIG for message settings
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
 
-  socket_connection_t connection = udp_connect(string_ip_addr, port); // Connect with UDP
+  socket_connection_t connection = udp_client_connect(string_ip_addr, port); // Connect with UDP
   if (connection.socket < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to open UDP socket");
     xSemaphoreTake(mutex, portMAX_DELAY);
@@ -235,7 +236,7 @@ void udp_task()
         break;
     }
     xSemaphoreGive(mutex);
-    udp_send(&connection, payload, payload_len, id_protocol);
+    udp_client_send(&connection, payload, payload_len, UDP_STATUS, id_protocol);
   }
 
   udp_socket_close(connection.socket);
@@ -243,7 +244,7 @@ void udp_task()
 
 void udp_continous_task() {
   size_t *ssid_len, *password_len;
-  char *ssid, *password, *recv_buffer;
+  char *ssid, *password;
 
   // Read CONFIG for WIFI settings
   read_u32_NVS(ssid_len, SSID_LENGTH);
@@ -267,8 +268,7 @@ void udp_continous_task() {
 void ble_continous_task() {
   ble_server_init(500);
   static bool inicio = true;
-  unsigned char *payload;
-  char id_protocol;
+  signed char id_protocol;
 
   // Read CONFIG for message settings
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
@@ -277,7 +277,7 @@ void ble_continous_task() {
   unsigned char payload[payload_len];
 
   while (keep_bt) {
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(1000));
     if(is_Aconnected && inicio){
       ESP_LOGI(STATUS_TAG, "BLE Connection established");
       inicio = false;
@@ -288,14 +288,17 @@ void ble_continous_task() {
       ESP_LOGI(STATUS_TAG, "Sent data through BLE");
     }
   }
+
+  ESP_LOGI(STATUS_TAG, "Stopped continous BLE");
+  write_int8_NVS(*rv_data, SYSTEM_STATUS);
+  free(rv_data);
   ble_server_deinit();
 }
 
 void ble_discontinous_task() {
   ble_server_init(500);
   int sleep_time;
-  unsigned char *payload;
-  char id_protocol;
+  signed char id_protocol;
 
   // Read CONFIG for message settings
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
@@ -319,9 +322,11 @@ void ble_discontinous_task() {
   }
 
   if (*rv_data == STATUS_OK) {
+    free(rv_data);
     deep_sleep_clk(sleep_time);
   } else {
     write_int8_NVS(*rv_data, SYSTEM_STATUS);
+    free(rv_data);
   }
 
   ble_server_deinit();
@@ -329,10 +334,11 @@ void ble_discontinous_task() {
 
 void switch_status()
 {
-  char status;
+  signed char status;
   int err = read_int8_NVS(&status, SYSTEM_STATUS);
   if (err < 0) {
     status = BLE_CONFIG_STATUS;
+    write_int8_NVS(BLE_CONFIG_STATUS, SYSTEM_STATUS);
   }
   switch (status)
   {

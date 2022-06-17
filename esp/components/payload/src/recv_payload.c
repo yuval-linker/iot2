@@ -1,4 +1,4 @@
-#include "../include/recv_payload.h"
+#include "recv_payload.h"
 
 char decode_payload_header(unsigned char *payload, payload_header_st *header) {
     int start = 0;

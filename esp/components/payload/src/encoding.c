@@ -1,4 +1,4 @@
-#include "../include/encoding.h"
+#include "encoding.h"
 
 /*
 Encoding functions

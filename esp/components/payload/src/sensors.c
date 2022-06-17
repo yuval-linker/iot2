@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include "../include/sensors.h"
+#include "sensors.h"
 
 /*
 Auxiliary functions

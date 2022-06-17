@@ -1,4 +1,4 @@
-#include "../include/decoding.h"
+#include "decoding.h"
 
 /*
 Decoding functions

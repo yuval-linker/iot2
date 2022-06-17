@@ -12,7 +12,7 @@ static const char *TCP_TAG = "ESP32 TCP";
 
 RTC_DATA_ATTR unsigned int payload_type = 0;
 
-int tcp_connect(unsigned char* host_ip, int port) {
+int tcp_client_connect(unsigned char* host_ip, int port) {
   int addr_family = AF_INET;
   int ip_protocol = IPPROTO_IP;
   struct sockaddr_in dest_addr;
@@ -36,7 +36,7 @@ int tcp_connect(unsigned char* host_ip, int port) {
 }
 
 
-void tcp_send(int sock, unsigned char* payload, int payload_size, char status_id, char protocol_id) {
+void tcp_client_send(int sock, unsigned char* payload, int payload_size, char status_id, char protocol_id) {
   bzero(payload, payload_size);
   send_payload(payload, status_id, protocol_id, (unsigned short) ID_DEVICE, MAC_DEVICE);
   int err = send(sock, payload, payload_size, 0);
@@ -47,7 +47,7 @@ void tcp_send(int sock, unsigned char* payload, int payload_size, char status_id
   ESP_LOGI(TCP_TAG, "Message sent");
 }
 
-int tcp_recv(int sock, char* buffer, int buffer_size) {
+int tcp_client_recv(int sock, char* buffer, int buffer_size) {
   int len = recv(sock, buffer, sizeof(buffer_size), 0);
   // Error occurred during receiving
   if (len < 0) {

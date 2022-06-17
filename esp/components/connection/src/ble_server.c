@@ -153,6 +153,7 @@ void write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_e
     ESP_LOGI(GATTS_TAG, "Need rsp %d", param->write.need_rsp);
     if (param->write.need_rsp) {
         ESP_LOGI(GATTS_TAG, "Is prep %d", param->write.is_prep);
+        ESP_LOGI(GATTS_TAG, "Write len %d", param->write.len);
         if (param->write.is_prep){
             if (prepare_write_env->prepare_buf == NULL) {
                 prepare_write_env->prepare_buf = (uint8_t *)malloc(PREPARE_BUF_MAX_SIZE*sizeof(uint8_t));
@@ -190,12 +191,16 @@ void write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_e
             prepare_write_env->prepare_len += param->write.len;
         } else {
             // There is only one message with less size than MTU, no EXEC event
+            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, status, NULL);
+            ESP_LOGI(GATTS_TAG, "Write len %d", param->write.len);
             if (param->write.len == 1) {
+                ESP_LOGI(GATTS_TAG, "Writing Rv Data");
                 // Store message in global variable
+                rv_data = (uint8_t *) malloc(sizeof(uint8_t));
                 *rv_data = param->write.value[0];
                 keep_bt = false;
+                write_EVT = true;
             }
-            esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, status, NULL);
         }
     }
 }
@@ -268,8 +273,6 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
         if (!param->write.is_prep){
             ESP_LOGI(GATTS_TAG, "GATT_WRITE_EVT a, app_id %d, value len %d :", param->reg.app_id, param->write.len);
             esp_log_buffer_hex(GATTS_TAG, param->write.value, param->write.len);
-
-            write_EVT = true;
 
             if (gl_profile_tab[PROFILE_APP_ID].descr_handle == param->write.handle && param->write.len == 2){
                 uint16_t descr_value = param->write.value[1]<<8 | param->write.value[0];
@@ -501,6 +504,7 @@ void ble_server_deinit() {
     is_Aconnected = false;
     notificationA_enable = false;
     keep_bt = true;
+    write_EVT = false;
 }
 
 

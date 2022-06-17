@@ -11,7 +11,7 @@
 
 static const char *UDP_TAG = "ESP32 UDP";
 
-socket_connection_t udp_connect(unsigned char *host_ip, int port) {
+socket_connection_t udp_client_connect(unsigned char *host_ip, int port) {
   socket_connection_t conn;
   int ip_protocol = IPPROTO_IP;
   struct sockaddr_in dest_addr;
@@ -29,7 +29,7 @@ socket_connection_t udp_connect(unsigned char *host_ip, int port) {
   return conn;
 }
 
-void udp_send(socket_connection_t* conn, unsigned char* payload, int payload_size, char status_id, char protocol_id) {
+void udp_client_send(socket_connection_t* conn, unsigned char* payload, int payload_size, char status_id, char protocol_id) {
   bzero(payload, PAYLOAD_4_SIZE);
   send_payload(payload, status_id, protocol_id, (unsigned short) ID_DEVICE, MAC_DEVICE);
   int err = sendto(conn->socket, payload, (size_t) payload_size, 0, (struct sockaddr *)&(conn->dest_addr), sizeof(conn->dest_addr));
