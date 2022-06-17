@@ -24,20 +24,20 @@ DATA_FIELDS = [
 ]
 
 def decode_header(payload_dict, encoded_payload):
-    payload_dict["id_device"] = int.from_bytes(encoded_payload[0:2], byteorder="big", signed=False)
+    payload_dict["id_device"] = int.from_bytes(encoded_payload[0:2], byteorder="little", signed=False)
     payload_dict["mac"] = ":".join([b.hex() for b in encoded_payload[2:8]])
-    payload_dict["status"] = int.from_bytes(encoded_payload[8:9], byteorder="big", signed=False)
-    payload_dict["id_protocol"] = int.from_bytes(encoded_payload[9:10], byteorder="big", signed=False)
-    payload_dict["len_msg"] = int.from_bytes(encoded_payload[10:12], byteorder="big", signed=False)
+    payload_dict["status"] = int.from_bytes(encoded_payload[8:9], byteorder="little", signed=False)
+    payload_dict["id_protocol"] = int.from_bytes(encoded_payload[9:10], byteorder="little", signed=False)
+    payload_dict["len_msg"] = int.from_bytes(encoded_payload[10:12], byteorder="little", signed=False)
 
 def decode_data(payload_dict, encoded_payload, id_protocol):
     for field in DATA_FIELDS:
         payload_dict[field] = None
     
     start = 12
-    payload_dict["val"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
+    payload_dict["val"] = int.from_bytes(encoded_payload[start:start+1], byteorder="little", signed=False)
     start += 1
-    encoded_payload["batt_level"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
+    encoded_payload["batt_level"] = int.from_bytes(encoded_payload[start:start+1], byteorder="little", signed=False)
     start += 1
     payload_dict["timestamp"] = datetime.now()
     start += 4
@@ -45,11 +45,11 @@ def decode_data(payload_dict, encoded_payload, id_protocol):
     if id_protocol == 0:
         return
     
-    payload_dict["temp"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
+    payload_dict["temp"] = int.from_bytes(encoded_payload[start:start+1], byteorder="little", signed=False)
     start += 1 
     payload_dict["press"] = struct.unpack("f", encoded_payload[start:start+4])[0]
     start += 4 
-    payload_dict["hum"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
+    payload_dict["hum"] = int.from_bytes(encoded_payload[start:start+1], byteorder="little", signed=False)
     start += 1 
     payload_dict["co"] = struct.unpack("f", encoded_payload[start:start+4])[0]
     start += 4
@@ -85,8 +85,8 @@ def decode_data(payload_dict, encoded_payload, id_protocol):
         
     
 
-def decode_payload(id_protocol, encoded_payload):
+def decode_payload(encoded_payload):
     payload_dict = {}
     decode_header(payload_dict, encoded_payload)
-    decode_data(payload_dict, encoded_payload, id_protocol)
+    decode_data(payload_dict, encoded_payload, payload_dict["id_protocol"])
     return payload_dict

@@ -1,20 +1,24 @@
 def encode_config(**kwargs):
     config_payload = b""
     for arg in kwargs:
-        if arg in ["host_ip_addr", "ssid", "passwd"]:
+        if arg in ["host_ip_addr", "ssid", "passwd", "id_device"]:
             continue
         
         length = 4
-        if arg == "id_device" or arg == "id_protocol":
+        if arg in ["id_protocol", "status"]:
             length = 1
 
-        config_payload += int.to_bytes(kwargs["arg"], byteorder="big", length=length)
-        config_payload += from_ip_addr_to_bytes(kwargs["host_ip_addr"])
-        config_payload += from_pystr_to_cstr(kwargs["ssid"])
-        config_payload += from_pystr_to_cstr(kwargs["passwd"])
+        config_payload += int.to_bytes(kwargs[arg], byteorder="little", length=length)
 
-        assert len(config_payload) == 98
-        return config_payload
+    config_payload += from_ip_addr_to_bytes(kwargs["host_ip_addr"])
+    config_payload += from_pystr_to_cstr(kwargs["ssid"])
+    config_payload += from_pystr_to_cstr(kwargs["passwd"])
+
+    assert len(config_payload) == 98
+    return config_payload
+
+def encode_status(status):
+    return int.to_bytes(status, byteorder="little", length=1)
 
 
 def from_ip_addr_to_bytes(ip_addr):
@@ -27,6 +31,8 @@ def from_ip_addr_to_bytes(ip_addr):
 def from_pystr_to_cstr(pystr):
     n = 32 - len(pystr)
     if n <= 0:
-        return pystr[0:31].encode() + b"\x00"
+        s = pystr[0:31].encode() + b"\x00"
     else:
-        return pystr.encode() + n * b"\x00"
+        s = pystr.encode() + n * b"\x00"
+    assert(len(s) == 32)
+    return s

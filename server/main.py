@@ -10,6 +10,7 @@ if __name__ == "__main__":
     Dialog = QtWidgets.QDialog()
     ui = Ui_Dialog()
     ui.setupUi(Dialog)
+    ble.start_BLE()
 
     #Botones
     ui.boton_graficar.clicked.connect(lambda: button.buttonGraph(ui.plot1,ui.selec_plot1.currentIndex(),ui.plot2,ui.selec_plot2.currentIndex()))

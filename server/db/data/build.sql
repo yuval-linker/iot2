@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS config(
     id_device INTEGER PRIMARY KEY,
-    id_protocol INTEGER,
     status INTEGER,
+    id_protocol INTEGER,
     bmi270_sampling INTEGER,
     bmi270_acc_sensibility INTEGER,
     bmi270_gyro_sensibility INTEGER,

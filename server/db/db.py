@@ -111,13 +111,14 @@ def set_device_config(**kwargs):
     )
 
 def get_device_config(id_device):
-    return fetch_one(f"""
+    c = fetch_one(f"""
     SELECT * 
     FROM config
     WHERE id_device=:id_device
     """, 
     {"id_device": id_device}
     )
+    return {x: y for x,y in zip(CONFIG_FIELDS, c)}
 
 def get_device_status(id_device):
     return fetch_one(f"""
@@ -127,3 +128,12 @@ def get_device_status(id_device):
     """, 
     {"id_device": id_device}
     )[0]
+
+def get_device_disc_time(id_device):
+   return fetch_one(f"""
+    SELECT discontinuous_time
+    FROM config
+    WHERE id_device=:id_device
+    """, 
+    {"id_device": id_device}
+    )[0] 

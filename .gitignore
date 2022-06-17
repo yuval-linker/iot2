@@ -1,4 +1,7 @@
 .vscode
 esp/build
 server/__pycache__
+server/db/__pycache__
+server/utils/__pycache__
+server/db/data/iot.db
 venv
