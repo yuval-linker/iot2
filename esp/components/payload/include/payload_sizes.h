@@ -8,7 +8,7 @@
 #define PAYLOAD_5_SIZE 19228    // 12 + 19216
 #define CONFIG_SIZE 98          // 34 + SSID + PASS
 
-#define MSG_LENS (unsigned short int[]){6, 16, 20, 44, 19216}
+#define MSG_LENS (unsigned short int[]){1, 6, 16, 20, 44, 19216}
 #define MAC_SIZE 6
 
 #define SSID_SIZE 32

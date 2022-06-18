@@ -518,11 +518,30 @@ void ble_server_deinit() {
     * */
 esp_err_t ble_send_payload(unsigned char* payload, int payload_size, char status_id, char protocol_id, bool type){
     esp_err_t ret;
-    bzero(payload, payload_size);
-    send_payload(payload, status_id, protocol_id, (unsigned short) ID_DEVICE, MAC_DEVICE);
+    
     ret = esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_APP_ID].gatts_if, 
                                         gl_profile_tab[PROFILE_APP_ID].conn_id, 
                                         gl_profile_tab[PROFILE_APP_ID].char_handle, 
                                         payload_size, payload, type);
     return ret;
+}
+
+void ble_send_full_payload(char status_id, char protocol_id, bool type) {
+    const int msg_len = get_protocol_msg_length(protocol_id);
+    unsigned char payload[msg_len];
+    bzero(payload, msg_len);
+    send_payload(payload, status_id, protocol_id, (unsigned short) ID_DEVICE, MAC_DEVICE);
+    int to_send = msg_len;
+    int offset = 0;
+    while (to_send > 0) {
+        int payload_size;
+        if (to_send > 20) {
+            payload_size = 20;
+        } else {
+            payload_size = to_send;
+        }
+        ESP_ERROR_CHECK(ble_send_payload(payload+offset, payload_size, status_id, protocol_id, false));
+        offset = offset + payload_size;
+        to_send = to_send - payload_size;
+    }
 }

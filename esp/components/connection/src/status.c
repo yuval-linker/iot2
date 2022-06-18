@@ -273,9 +273,6 @@ void ble_continous_task() {
   // Read CONFIG for message settings
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
 
-  const int payload_len = get_protocol_msg_length(id_protocol);
-  unsigned char payload[payload_len];
-
   while (keep_bt) {
     vTaskDelay(pdMS_TO_TICKS(1000));
     if(is_Aconnected && inicio){
@@ -284,7 +281,7 @@ void ble_continous_task() {
     }
 
     if(is_Aconnected && notificationA_enable){
-      ESP_ERROR_CHECK(ble_send_payload(payload, payload_len,  BLE_CONTINOUS_STATUS, id_protocol, false));
+      ble_send_full_payload(BLE_CONTINOUS_STATUS, id_protocol, false);
       ESP_LOGI(STATUS_TAG, "Sent data through BLE");
     }
   }
@@ -304,21 +301,17 @@ void ble_discontinous_task() {
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
   read_int32_NVS(&sleep_time, DISC_TIME);
 
-  const int payload_len = get_protocol_msg_length(id_protocol);
-  unsigned char payload[payload_len];
-
   // Wait for connection
   while (!is_Aconnected) {
     vTaskDelay(pdMS_TO_TICKS(10));
   }
   ESP_LOGI(STATUS_TAG, "BLE Connection established");
 
-  ESP_ERROR_CHECK(ble_send_payload(payload, payload_len,  BLE_CONTINOUS_STATUS, id_protocol, false));
-  ESP_LOGI(STATUS_TAG, "Sent data through BLE");
-
-  // Wait for response
   while (!write_EVT) {
-    vTaskDelay(pdMS_TO_TICKS(10));
+    // Send messages until confirmation has been recieved
+    ble_send_full_payload(BLE_DISCONTINOUS_STATUS, id_protocol, false);
+    ESP_LOGI(STATUS_TAG, "Sent data through BLE");
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 
   if (*rv_data == STATUS_OK) {

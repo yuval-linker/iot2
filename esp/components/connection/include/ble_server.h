@@ -47,3 +47,4 @@ void ble_controllers_init();
 void exec_write_event_env(prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param);
 void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 esp_err_t ble_send_payload(unsigned char* payload, int payload_size, char status_id, char protocol_id, bool type);
+void ble_send_full_payload(char status_id, char protocol_id, bool type);

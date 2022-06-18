@@ -1,31 +1,14 @@
-import pygatt
-import time
+from src import ble_conn as ble
 from db import db
-from utils import config
-
-BASE_UUID = "0000{bit_16_uuid}-0000-1000-8000-00805F9B34FB"
-
-global received_data
-
-def print_callback(handle, value):
-  global received_data
-  print(value)
-  received_data = True
+from threading import Thread
 
 if __name__ == "__main__":
-  received_data = False
-  adapter = pygatt.GATTToolBackend()
-  adapter.start()
-  scanned = adapter.scan()
-  esp = None
-  for d in scanned:
-    if d["name"] == "ESP32-01":
-      esp = d
-  # device = adapter.connect(esp["address"])
+  ble.start_BLE()
+
   # db.set_device_config(
   #   id_device = 1,
-  #   id_protocol = 1,
-  #   status = 31,
+  #   id_protocol = 3,
+  #   status = 30,
   #   bmi270_sampling = 1,
   #   bmi270_acc_sensibility = 1,
   #   bmi270_gyro_sensibility = 1,
@@ -34,54 +17,29 @@ if __name__ == "__main__":
   #   port_tcp = 1,
   #   port_udp = 1,
   #   host_ip_addr = "127.0.0.1",
-  #   ssid = "AMOGUS",
-  #   passwd = "AMOGUS",
+  #   ssid = "SUS",
+  #   passwd = "SUS",
   # )
-  # c = db.get_device_config(1)
-  # msg = config.encode_config(**c)
-  # device.char_write(BASE_UUID.format(bit_16_uuid="ff01"), msg)
-  # device.disconnect()
-  # print("Disconnected")
 
-  # time.sleep(5)
+  scan_list = ble.scan_esp()
+  esp = scan_list[0]
+  # ble.send_config_BLE(esp["address"], 1)
 
-  i = 3
-  while i > 0:
-    device = adapter.connect(esp["address"])
-    print("Connected")
-    device.subscribe(BASE_UUID.format(bit_16_uuid="ff01"), callback=print_callback, wait_for_response=False)
-    print("Waiting for data")
-    while not received_data:
-      time.sleep(1)
-    print("Received data")
-    received_data = False
-    device.char_write(BASE_UUID.format(bit_16_uuid="ff01"), b'\x06')
-    i -= 1
-    print(i)
-    time.sleep(60)
-  
-  device = adapter.connect(esp["address"])
-  print("Connected")
-  device.subscribe(BASE_UUID.format(bit_16_uuid="ff01"), callback=print_callback, wait_for_response=False)
-  print("Waiting for data")
-  while not received_data:
-    time.sleep(1)
-  received_data = False
-  print("Received data")
-  device.char_write(BASE_UUID.format(bit_16_uuid="ff01"), b'\x00')
-  device.disconnect()
+  # print("Starting continous")
 
+  # protocol = db.get_device_protocol(1)
+  # thread = Thread(target=ble.recv_continous_BLE, args=(esp["address"], 1, protocol))
+  # thread.start()
+  # new_status = int(input("Enter new status"))
+  # db.set_new_status(1, 31)
+  # ble.stop_BLE(esp["address"])
+  # thread.join()
 
-  
-  # while i > 0:
-  #   time.sleep(5)
-  #   i -= 1
-  #   print(i)
-  
-  # device.unsubscribe(BASE_UUID.format(bit_16_uuid="ff01"), wait_for_response=False)
-  # print("Unsibscribed")
-  # device.char_write(BASE_UUID.format(bit_16_uuid="ff01"), b'\x00')
-  # print("Sent Stop")
-  # device.disconnect()
-  
-  adapter.stop()
+  print("Starting discontinous")
+
+  protocol = db.get_device_protocol(1)
+  thread = Thread(target=ble.recv_discontinous_BLE, args=(esp["address"], 1, protocol))
+  thread.start()
+  new_status = int(input("Enter new status"))
+  db.set_new_status(1, new_status)
+  thread.join()

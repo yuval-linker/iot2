@@ -1,7 +1,7 @@
 #include "send_payload.h"
 #include <math.h>
 
-// writes 11 bytes
+// writes 12 bytes
 int set_header(int start, unsigned char *bytes, unsigned char id_status, unsigned char id_protocol, unsigned short int id_device, unsigned char *mac) {
     int counter = start;
     from_unsigned_short_int_to_bytearray(counter, bytes, id_device);
