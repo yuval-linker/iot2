@@ -3,11 +3,6 @@
 #include "lwip/sockets.h"
 #include "protocols.h"
 
-typedef struct socket_connection_t {
-  int socket;
-  struct sockaddr_in dest_addr;
-} socket_connection_t;
-
-socket_connection_t udp_client_connect(unsigned char *host_ip, int port);
-void udp_client_send(socket_connection_t* conn, unsigned char* payload, int payload_size, char status_id, char protocol_id);
+int udp_client_connect();
+void udp_client_send(int sock, int host_ip, int port, unsigned char* payload, int payload_size, char status_id, char protocol_id);
 void udp_socket_close(int sock);

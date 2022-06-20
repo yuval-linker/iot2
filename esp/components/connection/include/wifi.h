@@ -5,3 +5,4 @@
 #define WIFI_FAIL_BIT      BIT1
 
 void wifi_init(char *ssid, char *passwd);
+void wifi_controllers_init();

@@ -98,5 +98,4 @@ def decode_payload(encoded_payload):
     payload_dict = {}
     decode_header(payload_dict, encoded_payload)
     decode_data(payload_dict, encoded_payload, payload_dict["id_protocol"])
-    print(payload_dict)
     return payload_dict

@@ -7,6 +7,7 @@
 
 #include "status.h"
 #include "ble_server.h"
+#include "wifi.h"
 
 void app_main() {
   // Initialize NVS
@@ -18,10 +19,12 @@ void app_main() {
       err = nvs_flash_init();
   }
   ESP_ERROR_CHECK(err);
-  // Initialize BLE controllers
+  // Initialize BLE and WIFI controllers
   ble_controllers_init();
+  wifi_controllers_init();
   while (1)
   {
     switch_status();
+    vTaskDelay(pdMS_TO_TICKS(2000));
   }
 }

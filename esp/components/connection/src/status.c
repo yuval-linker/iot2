@@ -39,23 +39,24 @@ void ble_config_task() {
 }
 
 void tcp_config_task() {
-  size_t *ssid_len, *password_len;
-  char *ssid, *password, recv_buffer[CONFIG_SIZE];
-  unsigned char string_ip_addr[4];
+  size_t ssid_len, password_len;
+  char recv_buffer[CONFIG_SIZE];
   int port, ip_addr;
 
   // Read CONFIG for WIFI settings
-  read_u32_NVS(ssid_len, SSID_LENGTH);
-  read_u32_NVS(password_len, PASS_LENGTH);
-  read_str_NVS(ssid, ssid_len, SSID);
-  read_str_NVS(password, password_len, PASS);
+  read_u32_NVS(&ssid_len, SSID_LENGTH);
+  read_u32_NVS(&password_len, PASS_LENGTH);
+
+  char ssid[ssid_len], password[password_len];
+
+  read_str_NVS(ssid, &ssid_len, SSID);
+  read_str_NVS(password, &password_len, PASS);
   read_int32_NVS(&ip_addr, HOST_IP_ADDR);
   read_int32_NVS(&port, TCP_PORT);
-  int_ip_to_str(ip_addr, string_ip_addr);
   
   wifi_init(ssid, password); // Connect to wifi
 
-  int socket = tcp_client_connect(string_ip_addr, port); // Connect with TCP
+  int socket = tcp_client_connect(ip_addr, port); // Connect with TCP
   if (socket < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to open TCP socket");
     return;
@@ -67,6 +68,8 @@ void tcp_config_task() {
     return;
   }
 
+  ESP_LOGI(STATUS_TAG, "Recieved %d bytes", len);
+
   tcp_socket_close(socket);
 
   parse_and_save_config((unsigned char *)recv_buffer);
@@ -74,27 +77,28 @@ void tcp_config_task() {
 }
 
 void tcp_continous_task() {
-  size_t *ssid_len, *password_len;
-  char *ssid, *password, *recv_buffer;
-  unsigned char string_ip_addr[4];
+  size_t ssid_len, password_len;
+  char recv_buffer;
   int port, ip_addr;
   signed char id_protocol;
 
   // Read CONFIG for WIFI settings
-  read_u32_NVS(ssid_len, SSID_LENGTH);
-  read_u32_NVS(password_len, PASS_LENGTH);
-  read_str_NVS(ssid, ssid_len, SSID);
-  read_str_NVS(password, password_len, PASS);
+  read_u32_NVS(&ssid_len, SSID_LENGTH);
+  read_u32_NVS(&password_len, PASS_LENGTH);
+
+  char ssid[ssid_len], password[password_len];
+
+  read_str_NVS(ssid, &ssid_len, SSID);
+  read_str_NVS(password, &password_len, PASS);
   read_int32_NVS(&ip_addr, HOST_IP_ADDR);
   read_int32_NVS(&port, TCP_PORT);
-  int_ip_to_str(ip_addr, string_ip_addr);
 
   // Read CONFIG for message settings
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
   
   wifi_init(ssid, password); // Connect to wifi
 
-  int socket = tcp_client_connect(string_ip_addr, port); // Connect with TCP
+  int socket = tcp_client_connect(ip_addr, port); // Connect with TCP
   if (socket < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to open TCP socket");
     return;
@@ -102,42 +106,43 @@ void tcp_continous_task() {
 
   const int payload_len = get_protocol_msg_length(id_protocol);
   unsigned char payload[payload_len];
-  char same_status = 1;
+  char same_status = true;
 
   while (same_status) {
     tcp_client_send(socket, payload, payload_len, TCP_CONTINOUS_STATUS, id_protocol);
-    tcp_client_recv(socket, recv_buffer, 1);
-    same_status = (*recv_buffer == STATUS_OK);
+    tcp_client_recv(socket, &recv_buffer, 1);
+    same_status = (recv_buffer == STATUS_OK);
   }
 
   tcp_socket_close(socket);
 
-  write_int8_NVS(*recv_buffer, SYSTEM_STATUS);
+  write_int8_NVS(recv_buffer, SYSTEM_STATUS);
 }
 
 void tcp_discontinous_task() {
-  size_t *ssid_len, *password_len;
-  char *ssid, *password, *recv_buffer;
-  unsigned char string_ip_addr[4];
+  size_t ssid_len, password_len;
+  char recv_buffer;
   int port, ip_addr, sleep_time;
   signed char id_protocol;
 
   // Read CONFIG for WIFI settings
-  read_u32_NVS(ssid_len, SSID_LENGTH);
-  read_u32_NVS(password_len, PASS_LENGTH);
-  read_str_NVS(ssid, ssid_len, SSID);
-  read_str_NVS(password, password_len, PASS);
+  read_u32_NVS(&ssid_len, SSID_LENGTH);
+  read_u32_NVS(&password_len, PASS_LENGTH);
+
+  char ssid[ssid_len], password[password_len];
+
+  read_str_NVS(ssid, &ssid_len, SSID);
+  read_str_NVS(password, &password_len, PASS);
   read_int32_NVS(&ip_addr, HOST_IP_ADDR);
   read_int32_NVS(&port, TCP_PORT);
   read_int32_NVS(&sleep_time, DISC_TIME);
-  int_ip_to_str(ip_addr, string_ip_addr);
 
   // Read CONFIG for message settings
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
   
   wifi_init(ssid, password); // Connect to wifi
 
-  int socket = tcp_client_connect(string_ip_addr, port); // Connect with TCP
+  int socket = tcp_client_connect(ip_addr, port); // Connect with TCP
   if (socket < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to open TCP socket");
     return;
@@ -146,13 +151,13 @@ void tcp_discontinous_task() {
   const int payload_len = get_protocol_msg_length(id_protocol);
   unsigned char payload[payload_len];
 
-  tcp_client_send(socket, payload, payload_len, TCP_CONTINOUS_STATUS, id_protocol);
-  tcp_client_recv(socket, recv_buffer, 1);
+  tcp_client_send(socket, payload, payload_len, TCP_DISCONTINOUS_STATUS, id_protocol);
+  tcp_client_recv(socket, &recv_buffer, 1);
 
-  if (*recv_buffer == STATUS_OK) {
+  if (recv_buffer == STATUS_OK) {
     deep_sleep_clk(sleep_time);
   } else {
-    write_int8_NVS(*recv_buffer, SYSTEM_STATUS);
+    write_int8_NVS(recv_buffer, SYSTEM_STATUS);
   }
 
   tcp_socket_close(socket);
@@ -160,35 +165,47 @@ void tcp_discontinous_task() {
 
 void tcp_change_status_task()
 {
-  int port, ip_addr;
-  signed char id_protocol; 
-  char *recv_buffer;
-  unsigned char string_ip_addr[4];
+  int ip_addr; 
+  char recv_buffer;
 
   read_int32_NVS(&ip_addr, HOST_IP_ADDR);
-  read_int32_NVS(&port, TCP_PORT);
-  int_ip_to_str(ip_addr, string_ip_addr);
 
-  // Read CONFIG for message settings
-  read_int8_NVS(&id_protocol, ID_PROTOCOL);
-  int socket;
-  socket = tcp_client_connect(string_ip_addr, port); // Connect with TCP
-  if (socket < 0) {
+  int socket, listen_socket;
+  do {
+    listen_socket = tcp_server_start(CHANGE_STATUS_TCP_PORT); // Start TCP Server
     xSemaphoreTake(mutex, portMAX_DELAY);
-    task_errors = 1;
+    if (task_errors) {
+      xSemaphoreGive(mutex);
+      tcp_socket_close(listen_socket);
+      vTaskDelete(NULL);
+      return;
+    }
     xSemaphoreGive(mutex);
-    ESP_LOGE(STATUS_TAG, "Failed to open TCP socket");
-    return;
-  }
+    ESP_LOGE(STATUS_TAG, "Failed to open TCP socket. Trying again");
+  } while (listen_socket < 0);
+
+  do {
+    socket = tcp_server_accept(listen_socket); // Start TCP Server
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    if (task_errors) {
+      xSemaphoreGive(mutex);
+      tcp_socket_close(socket);
+      tcp_socket_close(listen_socket);
+      vTaskDelete(NULL);
+      return;
+    }
+    xSemaphoreGive(mutex);
+  } while (socket < 0);
   
   while (1) {
     xSemaphoreTake(mutex, portMAX_DELAY);
     if (task_errors) {
       tcp_socket_close(socket);
+      vTaskDelete(NULL);
       return;
     }
     xSemaphoreGive(mutex);
-    int len = tcp_client_recv(socket, recv_buffer, 1);
+    int len = tcp_client_recv(socket, &recv_buffer, 1);
     if (len >= 0) {
       break;
     }
@@ -201,24 +218,23 @@ void tcp_change_status_task()
 
   tcp_socket_close(socket);
 
-  write_int8_NVS(*recv_buffer, SYSTEM_STATUS);
+  write_int8_NVS(recv_buffer, SYSTEM_STATUS);
+  vTaskDelete(NULL);
 }
 
 void udp_task()
 {
   int port, ip_addr;
   signed char id_protocol;
-  unsigned char string_ip_addr[4];
 
   read_int32_NVS(&ip_addr, HOST_IP_ADDR);
-  read_int32_NVS(&port, TCP_PORT);
-  int_ip_to_str(ip_addr, string_ip_addr);
+  read_int32_NVS(&port, UDP_PORT);
 
   // Read CONFIG for message settings
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
 
-  socket_connection_t connection = udp_client_connect(string_ip_addr, port); // Connect with UDP
-  if (connection.socket < 0) {
+  int socket = udp_client_connect(); // Connect with UDP
+  if (socket < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to open UDP socket");
     xSemaphoreTake(mutex, portMAX_DELAY);
     task_errors = 1;
@@ -236,21 +252,24 @@ void udp_task()
         break;
     }
     xSemaphoreGive(mutex);
-    udp_client_send(&connection, payload, payload_len, UDP_STATUS, id_protocol);
+    udp_client_send(socket, ip_addr, port, payload, payload_len, UDP_STATUS, id_protocol);
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 
-  udp_socket_close(connection.socket);
+  udp_socket_close(socket);
 }
 
 void udp_continous_task() {
-  size_t *ssid_len, *password_len;
-  char *ssid, *password;
+  size_t ssid_len, password_len;
 
   // Read CONFIG for WIFI settings
-  read_u32_NVS(ssid_len, SSID_LENGTH);
-  read_u32_NVS(password_len, PASS_LENGTH);
-  read_str_NVS(ssid, ssid_len, SSID);
-  read_str_NVS(password, password_len, PASS);
+  read_u32_NVS(&ssid_len, SSID_LENGTH);
+  read_u32_NVS(&password_len, PASS_LENGTH);
+
+  char ssid[ssid_len], password[password_len];
+
+  read_str_NVS(ssid, &ssid_len, SSID);
+  read_str_NVS(password, &password_len, PASS);
   
   wifi_init(ssid, password); // Connect to wifi
 
@@ -366,6 +385,7 @@ void switch_status()
   
   default:
     ESP_LOGE(STATUS_TAG, "Invalid status");
+    write_int8_NVS(BLE_CONFIG_STATUS, SYSTEM_STATUS);
     break;
   }
 }

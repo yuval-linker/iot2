@@ -18,7 +18,6 @@ recv_data = {}
 
 def continous_callback(handle, value, address, msg_len):
     global esp_data
-    print(value)
     if value == BAD_NOTIFICATION:
         return
     if len(esp_data[address]) < msg_len:
@@ -30,7 +29,6 @@ def continous_callback(handle, value, address, msg_len):
 
 def discontinous_callback(handle, value, address, msg_len):
     global recv_data, esp_data
-    print(value)
     if value == BAD_NOTIFICATION:
         return
     if len(esp_data[address]) < msg_len:
@@ -65,32 +63,43 @@ def connect_device(address):
     return device
 
 def send_config_BLE(address: str, device_id: int) -> None:
-    device = connect_device(address)
-    c = db.get_device_config(device_id)
-    msg = config.encode_config(**c)
-    device.char_write(CHAR_UUID, msg)
-    device.disconnect()
+    while True:
+        try:
+            device = connect_device(address)
+            c = db.get_device_config(device_id)
+            msg = config.encode_config(**c)
+            device.char_write(CHAR_UUID, msg)
+            device.disconnect()
+            break
+        except Exception:
+            pass
+        
 
 def recv_continous_BLE(address: str, id_device: int, id_protocol: int) -> None:
     global connections, esp_data
-    connected = False
-    connections[address] = True
-    esp_data[address] = b''
-    con_callback = partial(continous_callback, address=address, msg_len=payload.PROTOCOL_LENGTH[id_protocol])
-    while not connected:
+    while True:
         try:
-            device = connect_device(address)
-            device.subscribe(CHAR_UUID, callback=con_callback, wait_for_response=False)
-            connected = True
-        except pygatt.exceptions.BLEError:
-            connected = False
+        connected = False
+        connections[address] = True
+        esp_data[address] = b''
+        con_callback = partial(continous_callback, address=address, msg_len=payload.PROTOCOL_LENGTH[id_protocol])
+        while not connected:
+            try:
+                device = connect_device(address)
+                device.subscribe(CHAR_UUID, callback=con_callback, wait_for_response=False)
+                connected = True
+            except pygatt.exceptions.BLEError:
+                connected = False
 
-    while connections[address]:
-        time.sleep(2)
-    
-    status = db.get_device_status(id_device)
-    device.char_write(CHAR_UUID, config.encode_status(status))
-    device.disconnect()
+        while connections[address]:
+            time.sleep(2)
+        
+        status = db.get_device_status(id_device)
+        device.char_write(CHAR_UUID, config.encode_status(status))
+        device.disconnect()
+        break
+    except Exception:
+        pass
 
 def recv_discontinous_BLE(address: str, id_device: int, id_protocol: int) -> None:
     global connections, recv_data, esp_data
@@ -102,24 +111,29 @@ def recv_discontinous_BLE(address: str, id_device: int, id_protocol: int) -> Non
     while True:
         recv_data[address] = False
         connected = False
-        while not connected:
-            try:
-                device = connect_device(address)
-                device.subscribe(CHAR_UUID, callback=disc_callback, wait_for_response=False)
-                connected = True
-            except pygatt.exceptions.BLEError:
-                connected = False
+        try:
+            while not connected:
+                try:
+                    device = connect_device(address)
+                    device.subscribe(CHAR_UUID, callback=disc_callback, wait_for_response=False)
+                    connected = True
+                except pygatt.exceptions.BLEError:
+                    connected = False
 
-        while not recv_data[address]:
-            time.sleep(2)
+            while not recv_data[address]:
+                time.sleep(2)
 
-        status = db.get_device_status(id_device)
-        if status == 31:
-            device.char_write(CHAR_UUID, config.encode_status(6))
-            time.sleep(sleep_time*60)
-        else:
-            device.char_write(CHAR_UUID, config.encode_status(status))
+            status = db.get_device_status(id_device)
+            if status == 31:
+                device.char_write(CHAR_UUID, config.encode_status(6))
+                time.sleep(sleep_time*60)
+            else:
+                device.char_write(CHAR_UUID, config.encode_status(status))
+                break
+            
             break
+        except Exception:
+            pass
 
     device.disconnect()
 

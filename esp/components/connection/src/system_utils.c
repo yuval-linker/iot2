@@ -121,7 +121,7 @@ int write_str_NVS(char *data, int key)
         ESP_LOGE(UTILS_TAG, "Error (%d) opening NVS handle!", err);
         return -1;
     } else {
-        size_t str_size = strlen(data);
+        size_t str_size = strlen(data) + 1;
         // Write
         switch (key)
         {
@@ -285,7 +285,7 @@ int read_str_NVS(char* data, size_t *length, int key)
                 ESP_LOGE(UTILS_TAG, "The value is not initialized yet!");
                 break;
             default :
-                ESP_LOGE(UTILS_TAG, "Error (%d) reading!", err);
+                ESP_LOGE(UTILS_TAG, "Error (%s) reading!", esp_err_to_name(err));
         }
         // Close
         nvs_close(my_handle);
@@ -308,10 +308,10 @@ int read_u32_NVS(uint32_t *data, int key)
         switch (key)
         {
             case SSID_LENGTH:
-                err = nvs_get_u32(my_handle, "ssid_len", data);
+                nvs_get_u32(my_handle, "ssid_len", data);
                 break;
             case PASS_LENGTH:
-                err = nvs_get_u32(my_handle, "pass_len", data);
+                nvs_get_u32(my_handle, "pass_len", data);
                 break;
             default:
                 ESP_LOGE(UTILS_TAG, "ERROR key");
@@ -368,6 +368,7 @@ void parse_and_save_config(unsigned char *payload)
         ESP_LOGE(UTILS_TAG, "Can't commit discontinous time");
     }
     err = write_int32_NVS(config.tcp_port, TCP_PORT);
+    ESP_LOGI(UTILS_TAG, "TCP PORT CONFIG %d", config.tcp_port);
     if (err < 0) {
         ESP_LOGE(UTILS_TAG, "Can't commit TCP port");
     }
@@ -375,6 +376,7 @@ void parse_and_save_config(unsigned char *payload)
     if (err < 0) {
         ESP_LOGE(UTILS_TAG, "Can't commit UDP port");
     }
+    ESP_LOGI(UTILS_TAG, "Recieved IP ADDR %u", config.host_ip_addr);
     err = write_int32_NVS(config.host_ip_addr, HOST_IP_ADDR);
     if (err < 0) {
         ESP_LOGE(UTILS_TAG, "Can't commit host ip address");
@@ -389,13 +391,13 @@ void parse_and_save_config(unsigned char *payload)
     }
 }
 
-void int_ip_to_str(int ip, unsigned char *ip_str)
-{
-    ip_str[0] = ip & 0xFF;
-    ip_str[1] = (ip >> 8) & 0xFF;
-    ip_str[2] = (ip >> 16) & 0xFF;
-    ip_str[3] = (ip >> 24) & 0xFF;
-}
+// void int_ip_to_str(int ip, unsigned char *ip_str)
+// {
+//     ip_str[0] = ip & 0xFF;
+//     ip_str[1] = (ip >> 8) & 0xFF;
+//     ip_str[2] = (ip >> 16) & 0xFF;
+//     ip_str[3] = (ip >> 24) & 0xFF;
+// }
 
 int get_protocol_msg_length(char id_protocol)
 {

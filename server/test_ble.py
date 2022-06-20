@@ -19,24 +19,27 @@ if __name__ == "__main__":
   #   host_ip_addr = "127.0.0.1",
   #   ssid = "SUS",
   #   passwd = "SUS",
-  # )
+  #  )
 
+  # Send config with BLE
   scan_list = ble.scan_esp()
   esp = scan_list[0]
-  # ble.send_config_BLE(esp["address"], 1)
+  ble.send_config_BLE(esp["address"], 1)
+  
+  print("Starting continous")
 
-  # print("Starting continous")
-
-  # protocol = db.get_device_protocol(1)
-  # thread = Thread(target=ble.recv_continous_BLE, args=(esp["address"], 1, protocol))
-  # thread.start()
-  # new_status = int(input("Enter new status"))
-  # db.set_new_status(1, 31)
-  # ble.stop_BLE(esp["address"])
-  # thread.join()
+  # Continous BLE
+  protocol = db.get_device_protocol(1)
+  thread = Thread(target=ble.recv_continous_BLE, args=(esp["address"], 1, protocol))
+  thread.start()
+  new_status = int(input("Enter new status"))
+  db.set_new_status(1, 31)
+  ble.stop_BLE(esp["address"])
+  thread.join()
 
   print("Starting discontinous")
 
+  # Discontinous BLE
   protocol = db.get_device_protocol(1)
   thread = Thread(target=ble.recv_discontinous_BLE, args=(esp["address"], 1, protocol))
   thread.start()

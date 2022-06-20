@@ -1,3 +1,6 @@
+import struct
+import socket
+
 def encode_config(**kwargs):
     config_payload = b""
     for arg in kwargs:
@@ -11,6 +14,7 @@ def encode_config(**kwargs):
         config_payload += int.to_bytes(kwargs[arg], byteorder="little", length=length)
 
     config_payload += from_ip_addr_to_bytes(kwargs["host_ip_addr"])
+    print(from_ip_addr_to_bytes(kwargs["host_ip_addr"]))
     config_payload += from_pystr_to_cstr(kwargs["ssid"])
     config_payload += from_pystr_to_cstr(kwargs["passwd"])
 
@@ -22,11 +26,9 @@ def encode_status(status):
 
 
 def from_ip_addr_to_bytes(ip_addr):
-    ip_bytes = map(lambda n: int.to_bytes(int(n), byteorder="big", length=1), ip_addr.split("."))
-    acc = b""
-    for b in ip_bytes:
-        acc += b
-    return acc
+    int_ip = struct.unpack("!I", socket.inet_aton(ip_addr))[0]
+    return int.to_bytes(int_ip, byteorder="big", length=4)
+
 
 def from_pystr_to_cstr(pystr):
     n = 32 - len(pystr)

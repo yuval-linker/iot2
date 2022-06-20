@@ -10,4 +10,6 @@
 
 #define STATUS_OK 0x6
 
+#define CHANGE_STATUS_TCP_PORT 25564
+
 void switch_status();
