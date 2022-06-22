@@ -6,6 +6,7 @@
 #include "esp_log.h"
 
 #include "status.h"
+#include "system_utils.h"
 #include "ble_server.h"
 #include "wifi.h"
 
@@ -22,6 +23,7 @@ void app_main() {
   // Initialize BLE and WIFI controllers
   ble_controllers_init();
   wifi_controllers_init();
+  write_int8_NVS(0, SYSTEM_STATUS);
   while (1)
   {
     switch_status();

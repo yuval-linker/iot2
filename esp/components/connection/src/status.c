@@ -17,6 +17,8 @@ const char *STATUS_TAG = "STATUS";
 SemaphoreHandle_t mutex = NULL;
 static char send_msgs = 1;
 static char task_errors = 0;
+static unsigned char payload[PAYLOAD_5_SIZE];
+
 
 /* BLE Variables */
 extern bool is_Aconnected;
@@ -122,7 +124,6 @@ void tcp_continous_task() {
   }
 
   const int payload_len = get_protocol_msg_length(id_protocol);
-  unsigned char payload[payload_len];
   char same_status = true;
 
   while (same_status) {
@@ -173,7 +174,6 @@ void tcp_discontinous_task() {
   }
 
   const int payload_len = get_protocol_msg_length(id_protocol);
-  unsigned char payload[payload_len];
 
   tcp_client_send(socket, payload, payload_len, TCP_DISCONTINOUS_STATUS, id_protocol);
   tcp_client_recv(socket, &recv_buffer, 1);
@@ -235,6 +235,7 @@ void tcp_change_status_task()
     xSemaphoreTake(mutex, portMAX_DELAY);
     if (task_errors) {
       tcp_socket_close(socket);
+      tcp_socket_close(listen_socket);
       vTaskDelete(NULL);
       return;
     }
@@ -251,6 +252,7 @@ void tcp_change_status_task()
   xSemaphoreGive(mutex);
 
   tcp_socket_close(socket);
+  tcp_socket_close(listen_socket);
 
   write_int8_NVS(recv_buffer, SYSTEM_STATUS);
   vTaskDelete(NULL);
@@ -284,7 +286,6 @@ void udp_task()
   }
 
   const int payload_len = get_protocol_msg_length(id_protocol);
-  unsigned char payload[payload_len];
 
   while (1) {
     xSemaphoreTake(mutex, portMAX_DELAY);

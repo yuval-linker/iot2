@@ -87,10 +87,13 @@ def decode_data(payload_dict, encoded_payload, id_protocol):
         start += 4
     
     elif (id_protocol == 5):
-        for i in range(2000):
-            payload_dict["acc_x"][i] = struct.unpack("f", encoded_payload[start + i])[0]
-            payload_dict["acc_y"][i] = struct.unpack("f", encoded_payload[start + 6400 + i])[0]
-            payload_dict["acc_z"][i] = struct.unpack("f", encoded_payload[start + 2*6400 + i])[0]
+        payload_dict["acc_x"] = []
+        payload_dict["acc_y"] = []
+        payload_dict["acc_z"] = []
+        for i in range(0, 1600, 4):
+            payload_dict["acc_x"].append(struct.unpack("f", encoded_payload[start + i: start + i + 4])[0])
+            payload_dict["acc_y"].append(struct.unpack("f", encoded_payload[start + 6400 + i: start + 6400 + i + 4])[0])
+            payload_dict["acc_z"].append(struct.unpack("f", encoded_payload[start + 2*6400 + i: start + 2*6400 + i + 4])[0])
         
     
 
