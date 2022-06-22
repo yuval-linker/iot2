@@ -1,7 +1,7 @@
-from ..src import ble_conn as ble
-from ..src import tcp_conn as tcp
-from ..src import udp_conn as udp
-from ..db import db
+from src import ble_conn as ble
+from src import tcp_conn as tcp
+from src import udp_conn as udp
+from db import db
 
 from threading import Thread
 
@@ -45,12 +45,16 @@ def search_esp32(**kwargs):
     plot_2_device_name_select = kwargs["plot_2_device_name_select"]
     plot_3_device_name_select = kwargs["plot_3_device_name_select"]
 
+    print("Scanning")
+
     scan_list = ble.scan_esp()
     scanned_devices.clear()
-    for device in scan_list:
-        scanned_devices.append(device)
+    device_names = []
+    if scan_list:
+        for device in scan_list:
+            scanned_devices.append(device)
 
-    device_names = [x["name"] for x in scan_list]
+        device_names = [x["name"] for x in scan_list]
 
     esp32_select.clear()
     plot_1_device_name_select.clear()
@@ -64,12 +68,13 @@ def search_esp32(**kwargs):
 
 def config_btn(**kwargs):
     scanned_devices = kwargs["scanned_devices"]
+    esp32_select = kwargs["esp32_select"]
+
     device_name = esp32_select.currentText()
     device = [d for d in scanned_devices if d["name"] == device_name][0]
 
     conn_threads = kwargs["conn_threads"]
 
-    esp32_select = kwargs["esp32_select"]
     device_id = esp32_select.currentIndex()
 
     config_mode_select = kwargs["config_mode_select"]
@@ -78,11 +83,16 @@ def config_btn(**kwargs):
     status_select = kwargs["status_select"]
     status = status_select_dict[int(status_select.currentIndex())]
 
+    id_protocol_box = kwargs["id_protocol_select"]
+    id_protocol = id_protocol_select_dict[int(id_protocol_box.currentIndex())]
+
+    print("Configuring")
+
     # we update the db with the new config, setting the status as 
     # config_mode to let the esp32 update its own status.
     db.set_device_config(
         id_device = device_id,
-        id_protocol = int(kwargs["id_protocol_select"].toPlainText()),
+        id_protocol = id_protocol,
         status = config_mode,
         bmi270_sampling = int(kwargs["acc_samp_field"].toPlainText()),
         bmi270_acc_sensibility = int(kwargs["acc_sens_field"].toPlainText()),
@@ -95,6 +105,8 @@ def config_btn(**kwargs):
         ssid = str(kwargs["ssid_field"].toPlainText()),
         passwd = str(kwargs["pass_field"].toPlainText()),
     )
+
+    ble.stop_BLE(device["address"])
 
     # we check if there is an ongoing connection between the
     # raspberry and the esp32, if true we wait until it stops 
@@ -120,21 +132,23 @@ def config_btn(**kwargs):
     db.set_new_status(device_id, status)
     conf_thread.start()
     conf_thread.join()
-        
+    
+
+
     # once the esp is successfully configured, we begin the connection.
     if status == 21:
         thread = Thread(target=tcp.init_tcp_continous_server, args=(
             str(kwargs["host_ip_addr_field"].toPlainText()),
             int(kwargs["port_tcp_field"].toPlainText()),
             device_id,
-            int(kwargs["id_protocol_select"].toPlainText())
+            id_protocol,
         ))
     elif status == 22:
         thread = Thread(target=tcp.init_tcp_discontinous_server, args=(
             str(kwargs["host_ip_addr_field"].toPlainText()),
             int(kwargs["port_tcp_field"].toPlainText()),
             device_id,
-            int(kwargs["id_protocol_select"].toPlainText())
+            id_protocol,
         ))
     elif status == 23:
         sv = udp.ServerUdp(
@@ -147,14 +161,16 @@ def config_btn(**kwargs):
         thread = Thread(target=ble.recv_continous_BLE, args=(
             device["address"],
             device_id,
-            int(kwargs["id_protocol_select"].toPlainText())
+            id_protocol,
         ))
     elif status == 31:
         thread = Thread(target=ble.recv_discontinous_BLE, args=(
             device["address"],
             device_id,
-            int(kwargs["id_protocol_select"].toPlainText())
+            id_protocol,
         ))
     
     conn_threads[device_id] = thread
     thread.start()
+
+    print("Configuring Done")

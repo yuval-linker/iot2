@@ -22,7 +22,7 @@ def continous_callback(handle, value, address, msg_len):
         return
     if len(esp_data[address]) < msg_len:
         esp_data[address] += value
-        return  
+        return
     payload_dict = payload.decode_payload(esp_data[address])
     esp_data[address] = b''
     db.insert_esp32_data(**payload_dict)
@@ -47,7 +47,7 @@ def start_BLE():
 def scan_esp() -> List[Dict]:
     try:
         nearby_devices = adapter.scan()
-        nearby_esps = filter(lambda x: ("ESP32-" in x["name"]), nearby_devices)
+        nearby_esps = filter(lambda x: ("ESP32-" in x["name"] if x["name"] else False), nearby_devices)
         return list(nearby_esps)
     except Exception as err:
         print(err)
@@ -130,8 +130,6 @@ def recv_discontinous_BLE(address: str, id_device: int, id_protocol: int) -> Non
             else:
                 device.char_write(CHAR_UUID, config.encode_status(status))
                 break
-            
-            break
         except Exception:
             pass
 
@@ -139,4 +137,5 @@ def recv_discontinous_BLE(address: str, id_device: int, id_protocol: int) -> Non
 
 def stop_BLE(address):
     global connections
-    connections[address] = False
+    if address in connections.keys():
+        connections[address] = False

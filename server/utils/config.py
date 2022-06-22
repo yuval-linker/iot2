@@ -14,7 +14,6 @@ def encode_config(**kwargs):
         config_payload += int.to_bytes(kwargs[arg], byteorder="little", length=length)
 
     config_payload += from_ip_addr_to_bytes(kwargs["host_ip_addr"])
-    print(from_ip_addr_to_bytes(kwargs["host_ip_addr"]))
     config_payload += from_pystr_to_cstr(kwargs["ssid"])
     config_payload += from_pystr_to_cstr(kwargs["passwd"])
 
