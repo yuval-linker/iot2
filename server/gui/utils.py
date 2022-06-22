@@ -192,7 +192,7 @@ def reset_btn(**kwargs):
         del conn_threads[device_id]
     
 
-def make_plot(**kwargs):
+def plot_start_btn(**kwargs):
     # retrieve from gui the plot, device and var.
     plot = kwargs["plot"]
     var_id = plot_select_var_dict[int(kwargs["plot_select_var"].currentIndex())]
@@ -212,3 +212,6 @@ def make_plot(**kwargs):
     # plot!
     p.plot(x, data)  
     
+def plot_stop_btn(**kwargs):
+    plot = kwargs["plot"]
+    plot.clean()

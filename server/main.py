@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets
 from gui.ui import Ui_Dialog
 from gui import utils
+from server.gui.utils import plot_start_btn
 from src import ble_conn as ble
 
 
@@ -43,11 +44,41 @@ if __name__ == "__main__":
         pass_field = ui.pass_field,
 
     ))
+
     ui.reset_btn.clicked.connect(lambda : utils.reset_btn(
         conn_threads=conn_threads,
         esp32_select=ui.esp32_select
     ))
 
+    ui.plot_1_start_btn.clicked.connect(lambda : utils.plot_start_btn(
+        plot=ui.plot1,
+        plot_select_var=ui.plot_1_select_var,
+        plot_select_device=ui.plot_1_select_device
+    ))
+
+    ui.plot_1_stop_btn.clicked.connect(lambda : utils.plot_stop_btn(
+        plot=ui.plot1
+    ))
+
+    ui.plot_2_start_btn.clicked.connect(lambda : utils.plot_start_btn(
+        plot=ui.plot2,
+        plot_select_var=ui.plot_2_select_var,
+        plot_select_device=ui.plot_2_select_device
+    ))
+
+    ui.plot_2_stop_btn.clicked.connect(lambda : utils.plot_stop_btn(
+        plot=ui.plot2
+    ))
+
+    ui.plot_3_start_btn.clicked.connect(lambda : utils.plot_start_btn(
+        plot=ui.plot3,
+        plot_select_var=ui.plot_3_select_var,
+        plot_select_device=ui.plot_3_select_device
+    ))
+
+    ui.plot_3_stop_btn.clicked.connect(lambda : utils.plot_stop_btn(
+        plot=ui.plot3
+    ))
 
     Dialog.show()
     sys.exit(app.exec_())
