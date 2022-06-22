@@ -47,7 +47,7 @@ def start_BLE():
 def scan_esp() -> List[Dict]:
     try:
         nearby_devices = adapter.scan()
-        nearby_esps = filter(lambda x: ("ESP32-01" == x["name"]), nearby_devices)
+        nearby_esps = filter(lambda x: ("ESP32-" in x["name"]), nearby_devices)
         return list(nearby_esps)
     except Exception as err:
         print(err)
@@ -79,27 +79,27 @@ def recv_continous_BLE(address: str, id_device: int, id_protocol: int) -> None:
     global connections, esp_data
     while True:
         try:
-        connected = False
-        connections[address] = True
-        esp_data[address] = b''
-        con_callback = partial(continous_callback, address=address, msg_len=payload.PROTOCOL_LENGTH[id_protocol])
-        while not connected:
-            try:
-                device = connect_device(address)
-                device.subscribe(CHAR_UUID, callback=con_callback, wait_for_response=False)
-                connected = True
-            except pygatt.exceptions.BLEError:
-                connected = False
+            connected = False
+            connections[address] = True
+            esp_data[address] = b''
+            con_callback = partial(continous_callback, address=address, msg_len=payload.PROTOCOL_LENGTH[id_protocol])
+            while not connected:
+                try:
+                    device = connect_device(address)
+                    device.subscribe(CHAR_UUID, callback=con_callback, wait_for_response=False)
+                    connected = True
+                except pygatt.exceptions.BLEError:
+                    connected = False
 
-        while connections[address]:
-            time.sleep(2)
-        
-        status = db.get_device_status(id_device)
-        device.char_write(CHAR_UUID, config.encode_status(status))
-        device.disconnect()
-        break
-    except Exception:
-        pass
+            while connections[address]:
+                time.sleep(2)
+            
+            status = db.get_device_status(id_device)
+            device.char_write(CHAR_UUID, config.encode_status(status))
+            device.disconnect()
+            break
+        except Exception:
+            pass
 
 def recv_discontinous_BLE(address: str, id_device: int, id_protocol: int) -> None:
     global connections, recv_data, esp_data

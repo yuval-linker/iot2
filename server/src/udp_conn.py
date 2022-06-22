@@ -6,6 +6,9 @@ import threading
 from utils.payload import MAX_PAYLOAD_SIZE, decode_payload
 from db import db
 
+
+def init_udp_server(sv):
+    sv.run()
 class ServerUdp():
     def __init__(self, host, sv_port, id_device, esp_port=25564) -> None:
         # constants of the problem

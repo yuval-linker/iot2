@@ -1,4 +1,4 @@
-import plot
+from . import plot
 import db
 from PyQt5 import QtWidgets
 
