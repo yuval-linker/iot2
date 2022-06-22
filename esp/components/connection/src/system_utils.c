@@ -1,10 +1,3 @@
-/*
-* Copyright (C) 2019 Center for Industry 4.0
-* All Rights Reserved
-*
-* Center_for_Industry_4.0_LICENSE_PLACEHOLDER
-* Desarrolladores: Enrique Germany, Luciano Radrigan
-*/
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -19,6 +12,12 @@
 
 const char* UTILS_TAG = "UTILS";
 
+/** @brief Writes a char to the Non-Volatile Memory
+    * @param data The char to be saved
+    * @param key Key name
+
+    * @return 0 if succesful, -1 otherwise
+**/
 int write_int8_NVS(int8_t data, int key)
 {
     esp_err_t err;
@@ -52,6 +51,12 @@ int write_int8_NVS(int8_t data, int key)
     return 0;
 }
 
+/** @brief Writes a 32-bit int to the Non-Volatile Memory
+    * @param data The int to be saved
+    * @param key Key name
+
+    * @return 0 if succesful, -1 otherwise
+**/
 int write_int32_NVS(int32_t data, int key)
 {
     esp_err_t err;
@@ -110,6 +115,12 @@ int write_int32_NVS(int32_t data, int key)
     return 0;
 }
 
+/** @brief Writes a string to the Non-Volatile Memory
+    * @param data The string to be saved
+    * @param key Key name
+
+    * @return 0 if succesful, -1 otherwise
+**/
 int write_str_NVS(char *data, int key)
 {
     esp_err_t err;
@@ -147,6 +158,12 @@ int write_str_NVS(char *data, int key)
     return 0;
 }
 
+/** @brief Reads a char from Non-Volatile Memory
+    * @param data The char where to write the written value
+    * @param key Key name
+
+    * @return 0 if succesful, -1 otherwise
+**/
 int read_int8_NVS(int8_t* data, int key)
 {
     esp_err_t err;
@@ -189,6 +206,12 @@ int read_int8_NVS(int8_t* data, int key)
     return 0;
 }
 
+/** @brief Reads a 32-bit int from Non-Volatile Memory
+    * @param data The int where to write the written value
+    * @param key Key name
+
+    * @return 0 if succesful, -1 otherwise
+**/
 int read_int32_NVS(int32_t* data, int key)
 {
     esp_err_t err;
@@ -253,6 +276,13 @@ int read_int32_NVS(int32_t* data, int key)
     return 0;
 }
 
+/** @brief Reads a string from Non-Volatile Memory
+    * @param data The char buffer where to write the written value
+    * @param length A pointer to the length of the string to be read
+    * @param key Key name
+
+    * @return 0 if succesful, -1 otherwise
+**/
 int read_str_NVS(char* data, size_t *length, int key)
 {
     esp_err_t err;
@@ -293,6 +323,12 @@ int read_str_NVS(char* data, size_t *length, int key)
     return 0;
 }
 
+/** @brief Reads an unsigned 32-bit int from Non-Volatile Memory
+    * @param data The unsigned int where to write the written value
+    * @param key Key name
+
+    * @return 0 if succesful, -1 otherwise
+**/
 int read_u32_NVS(uint32_t *data, int key)
 {
     esp_err_t err;
@@ -333,6 +369,9 @@ int read_u32_NVS(uint32_t *data, int key)
     return 0;
 }
 
+/** @brief Parses a message with a configuration and saves it into NVS
+    * @param payload The bytes buffer with the encoded configuration
+**/
 void parse_and_save_config(unsigned char *payload)
 {
     int err;
@@ -391,14 +430,11 @@ void parse_and_save_config(unsigned char *payload)
     }
 }
 
-// void int_ip_to_str(int ip, unsigned char *ip_str)
-// {
-//     ip_str[0] = ip & 0xFF;
-//     ip_str[1] = (ip >> 8) & 0xFF;
-//     ip_str[2] = (ip >> 16) & 0xFF;
-//     ip_str[3] = (ip >> 24) & 0xFF;
-// }
+/** @brief Returns the message length for the protocol given
+    * @param id_protocol The protocol ID
 
+    * @return The length of the message for the given protocol. Returns -1 if protocol invalid
+**/
 int get_protocol_msg_length(char id_protocol)
 {
     int msg_length;
@@ -430,7 +466,11 @@ int get_protocol_msg_length(char id_protocol)
     return msg_length;
 }
 
-void deep_sleep_clk(int wakeup_time_min) {
+/** @brief Enter the device into deep sleep for the given duration
+    * @param wakeup_time_min The time (in minutes) that the ESP has to wake up
+**/
+void deep_sleep_clk(int wakeup_time_min)
+{
     ESP_LOGI(UTILS_TAG, "Enabling timer wakeup, %d", wakeup_time_min);
     esp_sleep_enable_timer_wakeup(wakeup_time_min*1000000*60); //* 1.000.000
     esp_deep_sleep_start();

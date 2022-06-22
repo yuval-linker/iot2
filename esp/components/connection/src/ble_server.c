@@ -101,18 +101,17 @@ struct gatts_profile_inst gl_profile_tab[PROFILE_NUM] = {
     },
 };
 
-static esp_attr_value_t gatts_demo_char1_val =
-{
+static esp_attr_value_t gatts_demo_char1_val = {
     .attr_max_len = GATTS_CHAR_VAL_LEN_MAX, //max char length 64 (bytes asumo)
     .attr_len     = sizeof(char1_str),
     .attr_value   = char1_str,
 };
 
-
-
 /* FUNCTIONS */
 
-void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param){
+// Handle GAP events
+void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+{
     switch (event) {
     case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT: /*Once the advertising data have been set, the GAP event ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT is triggered*/
         adv_config_done &= (~adv_config_flag);
@@ -148,12 +147,21 @@ void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
     }
 }
 
-void write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param){
+/**
+ * Method that handles the write event when a message is incomplete.
+ * If a message's size is less than MTU then this function handles it
+ * instead of exec_write_event_env
+ * 
+ * Sends the response needed when writing in a characteristic
+ * 
+ * When a message of length 1 is recieved then we know its an ACK
+ * so it sets the global values to the according protocols and
+ * stores the value in the global variable rv_data
+*/
+void write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param)
+{
     esp_gatt_status_t status = ESP_GATT_OK;
-    ESP_LOGI(GATTS_TAG, "Need rsp %d", param->write.need_rsp);
     if (param->write.need_rsp) {
-        ESP_LOGI(GATTS_TAG, "Is prep %d", param->write.is_prep);
-        ESP_LOGI(GATTS_TAG, "Write len %d", param->write.len);
         if (param->write.is_prep){
             if (prepare_write_env->prepare_buf == NULL) {
                 prepare_write_env->prepare_buf = (uint8_t *)malloc(PREPARE_BUF_MAX_SIZE*sizeof(uint8_t));
@@ -192,7 +200,8 @@ void write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_e
         } else {
             // There is only one message with less size than MTU, no EXEC event
             esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, status, NULL);
-            ESP_LOGI(GATTS_TAG, "Write len %d", param->write.len);
+
+            // If message has len 1 the its ACK
             if (param->write.len == 1) {
                 ESP_LOGI(GATTS_TAG, "Writing Rv Data");
                 // Store message in global variable
@@ -205,18 +214,27 @@ void write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t *prepare_write_e
     }
 }
 
-void exec_write_event_env(prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param){
+/**
+ * Method that handles when a device has finished writing in a characteristic.
+ * The only call that triggers this function is when the server finishes
+ * writing a characteristic
+ * 
+ * It calls the utils function to parse and sotre the configuration with
+ * the recieved buffer
+ */
+void exec_write_event_env(prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param)
+{
     ESP_LOGI(GATTS_TAG, "Entering exec with %d", param->exec_write.exec_write_flag);
     if (param->exec_write.exec_write_flag == ESP_GATT_PREP_WRITE_EXEC) {
         // Store config
         keep_bt = false;
         parse_and_save_config(prepare_write_env->prepare_buf);
         ESP_LOGI(GATTS_TAG, "Stored config through BLE");
-        // esp_log_buffer_hex(GATTS_TAG, prepare_write_env->prepare_buf, prepare_write_env->prepare_len);
     } else {
         ESP_LOGI(GATTS_TAG,"ESP_GATT_PREP_WRITE_CANCEL");
     }
 
+    // Free memory and restore buffer
     if (prepare_write_env->prepare_buf) {
         free(prepare_write_env->prepare_buf);
         prepare_write_env->prepare_buf = NULL;
@@ -224,8 +242,9 @@ void exec_write_event_env(prepare_type_env_t *prepare_write_env, esp_ble_gatts_c
     prepare_write_env->prepare_len = 0;
 }
 
-
-void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param) {
+// Handle the GATTS events for the service registered
+void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
+{
     switch (event) {
     case ESP_GATTS_REG_EVT: /*The register application event is the first one that is triggered during the lifetime of the program*/
         gl_profile_tab[PROFILE_APP_ID].service_id.is_primary = true;
@@ -406,7 +425,9 @@ void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gat
     }
 }
 
-void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param){
+// Handle general GATTS events
+void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
+{
     /* If event is register event, store the gatts_if for each profile */
     if (event == ESP_GATTS_REG_EVT) { /*When an Application Profile is registered, an ESP_GATTS_REG_EVT event is triggered.*/
     /*The event is captured by the gatts_event_handler(), which used to store the generated interface in the profile table, and then the event is forwarded to the corresponding profile event handler.*/
@@ -438,7 +459,8 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
 /**
  * @brief Function to initiate controllers (needs to be called only once)
  */
-void ble_controllers_init() {
+void ble_controllers_init()
+{
   ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
   esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
@@ -449,23 +471,9 @@ void ble_controllers_init() {
     *  @param  MTU define MTU (Maximum Transmission Unit)
     *  @return Does not return data but prints in case of error. It can be modified to return any error
     * */
-void ble_server_init(uint16_t MTU){
+void ble_server_init(uint16_t MTU)
+{
     esp_err_t ret;
-
-    // ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
-
-    // esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    // ret = esp_bt_controller_init(&bt_cfg);
-    // if (ret) {
-    //     ESP_LOGE(GATTS_TAG, "%s initialize controller failed: %s\n", __func__, esp_err_to_name(ret));
-    //     return;
-    // }
-
-    // ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
-    // if (ret) {
-    //     ESP_LOGE(GATTS_TAG, "%s enable controller failed: %s\n", __func__, esp_err_to_name(ret));
-    //     return;
-    // }
     ret = esp_bluedroid_init();
     if (ret) {
         ESP_LOGE(GATTS_TAG, "%s init bluetooth failed: %s\n", __func__, esp_err_to_name(ret));
@@ -498,7 +506,12 @@ void ble_server_init(uint16_t MTU){
     }
 }
 
-void ble_server_deinit() {
+/**
+ * @brief Stops the BLE services and resets the global variables
+ * 
+ */
+void ble_server_deinit()
+{
     ESP_ERROR_CHECK(esp_bluedroid_disable());
     ESP_ERROR_CHECK(esp_bluedroid_deinit());
     is_Aconnected = false;
@@ -513,10 +526,11 @@ void ble_server_deinit() {
     *  @param  payload An array woth the data to send
     *  @param status_id The id of the system status being used
     *  @param protocol_id The id of the protocol of the message being sent 
-    *  @param  type Indicate the typo of send: False for notification(Need confirmation), True for Indication (does not need confirmation) 
+    *  @param  type Indicate the type of send: False for notification(Need confirmation), True for Indication (does not need confirmation)
     *  @return Return the error code or a ESP_OK
     * */
-esp_err_t ble_send_payload(unsigned char* payload, int payload_size, char status_id, char protocol_id, bool type){
+esp_err_t ble_send_payload(unsigned char* payload, int payload_size, char status_id, char protocol_id, bool type)
+{
     esp_err_t ret;
     
     ret = esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_APP_ID].gatts_if, 
@@ -526,15 +540,26 @@ esp_err_t ble_send_payload(unsigned char* payload, int payload_size, char status
     return ret;
 }
 
-void ble_send_full_payload(char status_id, char protocol_id, bool type) {
+/**
+ * @brief Sends the payload through BLE. If the size of the payload is bigger than MTU size then it fractions it
+ * 
+ * @param status_id The status ID of the device
+ * @param protocol_id The protocol ID of the communication
+ * @param type Indicate the type of send: False for notification(Need confirmation), True for Indication (does not need confirmation)
+ */
+void ble_send_full_payload(char status_id, char protocol_id, bool type)
+{
     const int msg_len = get_protocol_msg_length(protocol_id);
     unsigned char payload[msg_len];
+
     bzero(payload, msg_len);
     send_payload(payload, status_id, protocol_id, (unsigned short) ID_DEVICE, MAC_DEVICE);
+
     int to_send = msg_len;
     int offset = 0;
     while (to_send > 0) {
         int payload_size;
+        // Default MTU size is 20
         if (to_send > 20) {
             payload_size = 20;
         } else {

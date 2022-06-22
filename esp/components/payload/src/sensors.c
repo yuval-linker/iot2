@@ -5,6 +5,12 @@
 #include "sensors.h"
 
 /*
+All of the sensor data is randomized using auxiliary fucntions.
+There are structures for every type of sensors to store the data
+abd pass it to the encoding functions in send_payload.c
+*/
+
+/*
 Auxiliary functions
 */
 

@@ -12,6 +12,8 @@
 #include "status.h"
 
 const char *STATUS_TAG = "STATUS";
+
+/* Global Task variables */
 SemaphoreHandle_t mutex = NULL;
 static char send_msgs = 1;
 static char task_errors = 0;
@@ -24,6 +26,11 @@ extern bool write_EVT;
 extern uint8_t *rv_data;
 extern struct gatts_profile_inst gl_profile_tab[PROFILE_NUM];
 
+/** @brief Recieves the Configuration through BLE
+ * 
+ * Waits until the configuration has been written in its characteristic
+ * Then it saves it in NVS and deactivates Bluetooth
+**/
 void ble_config_task() {
   ble_server_init(500);
   static bool inicio = true;
@@ -38,6 +45,8 @@ void ble_config_task() {
   ble_server_deinit();
 }
 
+/** @brief Recieves the Configuration through TCP
+**/
 void tcp_config_task() {
   size_t ssid_len, password_len;
   char recv_buffer[CONFIG_SIZE];
@@ -62,6 +71,7 @@ void tcp_config_task() {
     return;
   }
 
+  // Recieve the configuration
   int len = tcp_client_recv(socket, recv_buffer, TCP_RECV_BUFFER_SIZE);
   if (len < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to receive config through TCP");
@@ -72,10 +82,17 @@ void tcp_config_task() {
 
   tcp_socket_close(socket);
 
+  // Save the configuration to NVS
   parse_and_save_config((unsigned char *)recv_buffer);
   ESP_LOGI(STATUS_TAG, "Config recieved and saved through TCP");
 }
 
+/** @brief Continously send messages through TCP
+ * 
+ * It connects to the server and sends messages
+ * until it recieves a message different from STATUS_OK
+ * Then it saves the new status recieved in the message to the NVS
+**/
 void tcp_continous_task() {
   size_t ssid_len, password_len;
   char recv_buffer;
@@ -115,10 +132,17 @@ void tcp_continous_task() {
   }
 
   tcp_socket_close(socket);
-
-  write_int8_NVS(recv_buffer, SYSTEM_STATUS);
+  write_int8_NVS(recv_buffer, SYSTEM_STATUS); // Write new status
 }
 
+/** @brief Send a message through TCP and then go into deep sleep
+ * 
+ * Connects to the server and sends a message
+ * Then it waits for an ACK message
+ * If the ACK is STATUS_OK then it goes to sleep
+ * for the discontinous time in the NVS minutes
+ * Otherwise it saves the new status recieved in the ACK
+**/
 void tcp_discontinous_task() {
   size_t ssid_len, password_len;
   char recv_buffer;
@@ -163,6 +187,14 @@ void tcp_discontinous_task() {
   tcp_socket_close(socket);
 }
 
+/** @brief Starts a server for recieving a message to stop the UDP stream
+ * 
+ * Opens a listening socket and accepts connections
+ * If a connection is made then it recieves a message
+ * Changes the status in NVS to the recieved message
+ * 
+ * If there are task errors in the UDP Task then it finishes
+**/
 void tcp_change_status_task()
 {
   int ip_addr; 
@@ -171,6 +203,7 @@ void tcp_change_status_task()
   read_int32_NVS(&ip_addr, HOST_IP_ADDR);
 
   int socket, listen_socket;
+  // Try opening a socket until it can
   do {
     listen_socket = tcp_server_start(CHANGE_STATUS_TCP_PORT); // Start TCP Server
     xSemaphoreTake(mutex, portMAX_DELAY);
@@ -181,9 +214,9 @@ void tcp_change_status_task()
       return;
     }
     xSemaphoreGive(mutex);
-    ESP_LOGE(STATUS_TAG, "Failed to open TCP socket. Trying again");
   } while (listen_socket < 0);
 
+  // Try accepting a new connection until it does
   do {
     socket = tcp_server_accept(listen_socket); // Start TCP Server
     xSemaphoreTake(mutex, portMAX_DELAY);
@@ -197,6 +230,7 @@ void tcp_change_status_task()
     xSemaphoreGive(mutex);
   } while (socket < 0);
   
+  // Try to recieve a message until it does
   while (1) {
     xSemaphoreTake(mutex, portMAX_DELAY);
     if (task_errors) {
@@ -209,10 +243,10 @@ void tcp_change_status_task()
     if (len >= 0) {
       break;
     }
-    ESP_LOGE(STATUS_TAG, "Failed to receive status change through TCP");
   }
 
   xSemaphoreTake(mutex, portMAX_DELAY);
+  // Stop UDP stream
   send_msgs = 0;
   xSemaphoreGive(mutex);
 
@@ -222,6 +256,13 @@ void tcp_change_status_task()
   vTaskDelete(NULL);
 }
 
+/** @brief Sends UDP stream messages
+ * 
+ * Starts a UDP socket and starts sending messages
+ * until the TCP task sets send_messages to 0
+ * 
+ * If it fails it stops the TCP Task
+**/
 void udp_task()
 {
   int port, ip_addr;
@@ -259,6 +300,13 @@ void udp_task()
   udp_socket_close(socket);
 }
 
+/** @brief Starts the TCP server task and UDP task to stream messages
+ * 
+ * It starts the TCP server task that recieves a message from the server to
+ * stop the UDP stream
+ * It also starts the UDP stream task
+ * Waits until both of those functions end
+**/
 void udp_continous_task() {
   size_t ssid_len, password_len;
 
@@ -275,8 +323,12 @@ void udp_continous_task() {
 
   mutex = xSemaphoreCreateMutex();
   if (mutex != NULL) {
+    // Start TCP task
     xTaskCreate(tcp_change_status_task, "tcp_status_client", 4096, NULL, 5, NULL);
+    // Start UDP task
     udp_task();
+
+    // Reset global values
     xSemaphoreTake(mutex, portMAX_DELAY);
     task_errors = 0;
     send_msgs = 1;
@@ -284,6 +336,8 @@ void udp_continous_task() {
   }
 }
 
+/** @brief Continously sends messages through BLE notifications
+**/
 void ble_continous_task() {
   ble_server_init(500);
   static bool inicio = true;
@@ -293,7 +347,7 @@ void ble_continous_task() {
   read_int8_NVS(&id_protocol, ID_PROTOCOL);
 
   while (keep_bt) {
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelay(pdMS_TO_TICKS(1000)); // need to delay otherwise CPU watchdogs are triggered
     if(is_Aconnected && inicio){
       ESP_LOGI(STATUS_TAG, "BLE Connection established");
       inicio = false;
@@ -306,11 +360,22 @@ void ble_continous_task() {
   }
 
   ESP_LOGI(STATUS_TAG, "Stopped continous BLE");
+
+  // Saved the status written to NVS
   write_int8_NVS(*rv_data, SYSTEM_STATUS);
   free(rv_data);
+
   ble_server_deinit();
 }
 
+/** @brief Send a message through BLE and then go into deep sleep
+ * 
+ * Starts Bluetooth services
+ * Then it waits for an ACK message
+ * If the ACK is STATUS_OK then it goes to sleep
+ * for the discontinous time in the NVS minutes
+ * Otherwise it saves the new status recieved in the ACK
+**/
 void ble_discontinous_task() {
   ble_server_init(500);
   int sleep_time;
@@ -326,13 +391,14 @@ void ble_discontinous_task() {
   }
   ESP_LOGI(STATUS_TAG, "BLE Connection established");
 
+  // Send messages until confirmation has been recieved
   while (!write_EVT) {
-    // Send messages until confirmation has been recieved
     ble_send_full_payload(BLE_DISCONTINOUS_STATUS, id_protocol, false);
     ESP_LOGI(STATUS_TAG, "Sent data through BLE");
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 
+  // Read ACK message
   if (*rv_data == STATUS_OK) {
     free(rv_data);
     deep_sleep_clk(sleep_time);
@@ -344,6 +410,11 @@ void ble_discontinous_task() {
   ble_server_deinit();
 }
 
+/** @brief Switches to the status in NVS and starts its corresponding task
+ * 
+ * Reads the status from NVS and starts the task of that corresponding status
+ * If the status is invalid then it goes to BLE_CONFIG_STATUS
+**/
 void switch_status()
 {
   signed char status;

@@ -1,7 +1,16 @@
 #include "send_payload.h"
 #include <math.h>
 
-// writes 12 bytes
+/** @brief Sets the header of the payload with the information provided. Writes 12 bytes
+    * @param start The position in the buffer where to start inserting the bytes
+    * @param bytes The buffer array with the bytes
+    * @param id_status The Status ID of the device
+    * @param id_protocol The protocol id of the device
+    * @param id_device The Device ID
+    * @param mac The Device MAC
+
+    * @return How many bytes where inserted in the buffer
+**/
 int set_header(int start, unsigned char *bytes, unsigned char id_status, unsigned char id_protocol, unsigned short int id_device, unsigned char *mac) {
     int counter = start;
     from_unsigned_short_int_to_bytearray(counter, bytes, id_device);
@@ -19,7 +28,12 @@ int set_header(int start, unsigned char *bytes, unsigned char id_status, unsigne
     return counter - start;
 }
 
-// writes 6 bytes.
+/** @brief Sets the basic data of the payload with random sensor information. Writes 6 bytes
+    * @param start The position in the buffer where to start inserting the bytes
+    * @param bytes The buffer array with the bytes
+
+    * @return How many bytes where inserted in the buffer
+**/
 int set_basic_data(int start, unsigned char *bytes) {
     int counter = start;
     from_char_to_bytearray(counter, bytes, 1);
@@ -31,8 +45,12 @@ int set_basic_data(int start, unsigned char *bytes) {
     return counter - start;
 }
 
+/** @brief Sets THPC sensor (random) data in the payload. Writes 10 bytes
+    * @param start The position in the buffer where to start inserting the bytes
+    * @param bytes The buffer array with the bytes
 
-// writes 10 bytes
+    * @return How many bytes where inserted in the buffer
+**/
 int set_thpc_sensor_data(int start, unsigned char *bytes) {
     int counter = start;
     thpc_sensor_st data = THPC_sensor();
@@ -47,7 +65,13 @@ int set_thpc_sensor_data(int start, unsigned char *bytes) {
     return counter - start;
 }
 
-// writes 4 bytes or 28 bytes
+/** @brief Sets the Aceloremeter KPI (random) data on the payload. Writes 4 or 28 bytes
+    * @param start The position in the buffer where to start inserting the bytes
+    * @param bytes The buffer array with the bytes
+    * @param only_rms If True only includes the RMS data. Otherwise includes Amplitude and Frequency
+
+    * @return How many bytes where inserted in the buffer
+**/
 int set_acc_kpi_data(int start, unsigned char *bytes, int only_rms) {
     int counter = start;
     acc_kpi_st data = Aceloremeter_kpi();
@@ -70,7 +94,12 @@ int set_acc_kpi_data(int start, unsigned char *bytes, int only_rms) {
     return counter - start;
 }
 
-// writes 19200 bytes
+/** @brief Sets the Aceloremeter sensor data on the payload with the information provided. Writes 19200 bytes
+    * @param start The position in the buffer where to start inserting the bytes
+    * @param bytes The buffer array with the bytes
+
+    * @return How many bytes where inserted in the buffer
+**/
 int set_acc_sensor_data(int start, unsigned char *bytes) {
     for (int i = 0; i < ACC_VECTOR_SIZE; i++) {
         from_float_to_bytearray(start + 4*i, bytes, (float) 2*sin(2*M_PI*0.001*i));
@@ -86,6 +115,13 @@ int set_acc_sensor_data(int start, unsigned char *bytes) {
     return 19200;
 }
 
+/** @brief Writes bytes of the message into the payload. This includes Header and Data.
+    * @param payload The buffer array with the bytes
+    * @param id_status The Status ID of the device
+    * @param id_protocol The protocol id of the device
+    * @param id_device The Device ID
+    * @param mac The Device MAC
+**/
 void send_payload(unsigned char *payload, unsigned char id_status, unsigned char id_protocol, unsigned short int id_device, unsigned char *mac) {
     int start = 0;
     start += set_header(start, payload, id_status, id_protocol, id_device, mac);

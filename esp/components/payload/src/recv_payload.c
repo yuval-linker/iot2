@@ -1,5 +1,6 @@
 #include "recv_payload.h"
 
+// NOT USED
 char decode_payload_header(unsigned char *payload, payload_header_st *header) {
     int start = 0;
     header->id_device = from_bytearray_to_unsigned_short_int(start, payload);
@@ -14,6 +15,7 @@ char decode_payload_header(unsigned char *payload, payload_header_st *header) {
     return header->id_protocol;
 }
 
+// NOT USED
 void decode_payload_data(unsigned char *payload, unsigned char id_protocol, payload_data_st *data) {
     int start = 11;
     data->val = from_bytearray_to_char(start, payload);
@@ -67,6 +69,7 @@ void decode_payload_data(unsigned char *payload, unsigned char id_protocol, payl
     }
 }
 
+// NOT USED
 void recv_payload(unsigned char *payload, payload_st *decoded_payload) {
     payload_header_st header;
     unsigned char id_protocol = decode_payload_header(payload, &header);
@@ -79,6 +82,10 @@ void recv_payload(unsigned char *payload, payload_st *decoded_payload) {
     decoded_payload->data = data;
 }
 
+/** @brief Function to decode the incoming message with the configuration data
+    * @param payload The buffer with the bytes from the incoming message
+    * @param data The config structure to populate with the decoded values
+**/
 void decode_config_data(unsigned char *payload, config_data_st *data) {
     int start = 0;
     data->status = from_bytearray_to_char(start, payload);
@@ -102,12 +109,13 @@ void decode_config_data(unsigned char *payload, config_data_st *data) {
     data->host_ip_addr = from_bytearray_to_int(start, payload);
     start += 4;
 
-    // 34
+    // 32
     for (int i = 0; i < SSID_SIZE; i++) {
         data->ssid[i] = from_bytearray_to_char(start, payload);
         start += 1;
     }
 
+    // 32
     for (int i = 0; i < PASS_SIZE; i++) {
         data->pass[i] = from_bytearray_to_char(start, payload);
         start += 1;

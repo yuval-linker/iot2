@@ -25,6 +25,6 @@ void app_main() {
   while (1)
   {
     switch_status();
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }

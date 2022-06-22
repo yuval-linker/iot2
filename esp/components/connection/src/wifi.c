@@ -1,9 +1,3 @@
-/* WiFi station Example
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -23,7 +17,7 @@ static EventGroupHandle_t s_wifi_event_group;
 static const char *WIFI_TAG = "WIFI CONNECTION";
 static int s_retry_num = 0;
 
-
+// Handles the WIFI events for connection and joining a network
 void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
@@ -46,7 +40,10 @@ void event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-void wifi_controllers_init() {
+/** @brief Initializes the WIFI controllers. Needs to be called only once at the beginning of the program's lifetime
+**/
+void wifi_controllers_init()
+{
     s_wifi_event_group = xEventGroupCreate();
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -69,6 +66,11 @@ void wifi_controllers_init() {
                                                         &instance_got_ip));
 }
 
+/** @brief Connect to a wifi Access Point. 
+ * Copied from the wifi/getting_started/station example in the ESP32 IDF Github
+    * @param ssid The SSID of the WIFI network to connect to
+    * @param passwd The password of the WIFI signal
+**/
 void wifi_init(char *ssid, char *passwd)
 {
     wifi_config_t wifi_config = {
