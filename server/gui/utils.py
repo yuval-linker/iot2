@@ -1,3 +1,5 @@
+import json
+import statistics
 from src import ble_conn as ble
 from src import tcp_conn as tcp
 from src import udp_conn as udp
@@ -174,3 +176,38 @@ def config_btn(**kwargs):
     thread.start()
 
     print("Configuring Done")
+
+
+def reset_btn(**kwargs):
+    esp32_select = kwargs["esp32_select"]
+    conn_threads = kwargs["conn_threads"]
+    device_id = esp32_select.currentIndex()
+
+    db.set_new_status(device_id, 0)
+    thread = conn_threads.get(device_id)
+    
+    if thread is not None:
+        thread.join()
+        del conn_threads[device_id]
+    
+
+def make_plot(**kwargs):
+    # retrieve from gui the plot, device and var.
+    plot = kwargs["plot"]
+    var_id = plot_select_var_dict[int(kwargs["plot_select_var"].currentIndex())]
+    device_id = int(kwargs["plot_select_device"].currentIndex())
+
+    # clear the current plot    
+    plot.clear()
+
+    p = plot.addPlot(row=0, col=0)
+    data = [d[var_id] for d in db.get_esp32_data(id_device=device_id)]
+    if var_id >= 15 and var_id <= 17:   # acc_x, acc_y, acc_z are encoded arrays
+        data = [statistics.mean(json.loads(d)) for d in data]   # we use the mean value.
+    
+    # x-axis
+    x = range(len(data))
+
+    # plot!
+    p.plot(x, data)  
+    
