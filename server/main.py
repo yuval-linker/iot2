@@ -43,6 +43,10 @@ if __name__ == "__main__":
         pass_field = ui.pass_field,
 
     ))
+    ui.reset_btn.clicked.connect(lambda : utils.reset_btn(
+        conn_threads=conn_threads,
+        esp32_select=ui.esp32_select
+    ))
 
 
     Dialog.show()
