@@ -10,12 +10,13 @@ from db import db
 def init_udp_server(sv):
     sv.run()
 class ServerUdp():
-    def __init__(self, host, sv_port, id_device, esp_port=25564) -> None:
+    def __init__(self, host, sv_port, id_device, id_protocol, esp_port=25564) -> None:
         # constants of the problem
         self.host = host
         self.sv_port = sv_port
         self.esp_port = esp_port
         self.id_device = id_device
+        self.id_protocol = id_protocol
 
         # global variables, mutual exclusion
         self.wait_notifier = True
@@ -54,7 +55,19 @@ class ServerUdp():
             s.bind((self.host, self.sv_port))
 
             while True:
-                encoded_payload, addr = s.recvfrom(MAX_PAYLOAD_SIZE)
+                if self.id_protocol == 5:
+                    recv_len = MAX_PAYLOAD_SIZE
+                    recv_msg = b''
+                    addr = None
+                    while recv_len > 0:
+                        encoded_msg, address = s.recvfrom(MAX_PAYLOAD_SIZE)
+                        recv_msg += encoded_msg
+                        recv_len -= len(encoded_msg)
+                        addr = address
+                    encoded_msg = recv_msg
+                else:
+                    encoded_payload, addr = s.recvfrom(MAX_PAYLOAD_SIZE)
+
                 print(f"Recieved data of ESP32 by {addr}")
                 decoded_payload = decode_payload(encoded_payload)
                 
@@ -68,6 +81,7 @@ class ServerUdp():
                         self.wait_notifier = False
                         self.esp_addr = addr
                         self.condition.notifyAll()
+                    break
 
     def tcp_notifier(self):
         """

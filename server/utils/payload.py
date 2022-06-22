@@ -1,5 +1,6 @@
 from datetime import datetime
 import struct
+import json
 
 MAX_PAYLOAD_SIZE = 19228
 
@@ -94,6 +95,9 @@ def decode_data(payload_dict, encoded_payload, id_protocol):
             payload_dict["acc_x"].append(struct.unpack("f", encoded_payload[start + i: start + i + 4])[0])
             payload_dict["acc_y"].append(struct.unpack("f", encoded_payload[start + 6400 + i: start + 6400 + i + 4])[0])
             payload_dict["acc_z"].append(struct.unpack("f", encoded_payload[start + 2*6400 + i: start + 2*6400 + i + 4])[0])
+        payload_dict["acc_x"] = json.dumps(payload_dict["acc_x"])
+        payload_dict["acc_y"] = json.dumps(payload_dict["acc_y"])
+        payload_dict["acc_z"] = json.dumps(payload_dict["acc_z"])
         
     
 

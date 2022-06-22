@@ -63,16 +63,18 @@ def connect_device(address):
     return device
 
 def send_config_BLE(address: str, device_id: int) -> None:
-    while True:
+    completed = False
+    while not completed:
+        device = connect_device(address)
         try:
-            device = connect_device(address)
             c = db.get_device_config(device_id)
             msg = config.encode_config(**c)
             device.char_write(CHAR_UUID, msg)
+            completed = True
+        except Exception as err:
+            print(err)
+        finally:
             device.disconnect()
-            break
-        except Exception:
-            pass
         
 
 def recv_continous_BLE(address: str, id_device: int, id_protocol: int) -> None:

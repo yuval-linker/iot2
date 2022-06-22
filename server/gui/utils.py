@@ -157,6 +157,7 @@ def config_btn(**kwargs):
             host=str(kwargs["host_ip_addr_field"].toPlainText()),
             sv_port=int(kwargs["port_udp_field"].toPlainText()),
             id_device=device_id,
+            id_protocol=id_protocol,
         )
         thread = Thread(target=udp.init_udp_server, args=(sv,))
     elif status == 30:

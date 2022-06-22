@@ -31,7 +31,17 @@ def init_tcp_continous_server(host, port, device_id, id_protocol):
         with conn:
             print(f"Connected by {addr} to an ESP32")
             while True:
-                encoded_payload = conn.recv(MAX_PAYLOAD_SIZE)
+                if id_protocol == 5:
+                    recv_len = MAX_PAYLOAD_SIZE
+                    recv_msg = b''
+                    while recv_len > 0:
+                        encoded_msg = conn.recv(MAX_PAYLOAD_SIZE)
+                        recv_msg += encoded_msg
+                        recv_len -= len(encoded_msg)
+                    encoded_payload = recv_msg
+                else:
+                    encoded_payload = conn.recv(MAX_PAYLOAD_SIZE)
+
                 decoded_payload = decode_payload(encoded_payload)
 
                 current_status = db.get_device_status(device_id)
@@ -61,11 +71,20 @@ def init_tcp_discontinous_server(host, port, id_device, id_protocol):
 
             with conn:
                 print(f"Connected by {addr} to an ESP32")
-                encoded_payload = conn.recv(MAX_PAYLOAD_SIZE)
+                if id_protocol == 5:
+                    recv_len = MAX_PAYLOAD_SIZE
+                    recv_msg = b''
+                    while recv_len > 0:
+                        encoded_msg = conn.recv(MAX_PAYLOAD_SIZE)
+                        recv_msg += encoded_msg
+                        recv_len -= len(encoded_msg)
+                    encoded_payload = recv_msg
+                else:
+                    encoded_payload = conn.recv(MAX_PAYLOAD_SIZE)
+
                 decoded_payload = decode_payload(encoded_payload)
 
                 current_status = db.get_device_status(id_device)
-                print(current_status, decoded_payload['status'])
                 if decoded_payload['status'] != current_status:
                     # Enviar al client nuevo status y luego cerrar sv.
                     conn.send(int.to_bytes(current_status, byteorder="little", length=1))
