@@ -46,6 +46,7 @@ if __name__ == "__main__":
     ))
 
     ui.reset_btn.clicked.connect(lambda : utils.reset_btn(
+        scanned_devices=scanned_devices,
         conn_threads=conn_threads,
         esp32_select=ui.esp32_select
     ))
