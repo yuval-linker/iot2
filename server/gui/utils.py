@@ -180,9 +180,15 @@ def config_btn(**kwargs):
 
 
 def reset_btn(**kwargs):
+    scanned_devices = kwargs["scanned_devices"]
     esp32_select = kwargs["esp32_select"]
     conn_threads = kwargs["conn_threads"]
+
+    device_name = esp32_select.currentText()
+    device = [d for d in scanned_devices if d["name"] == device_name][0]
     device_id = esp32_select.currentIndex()
+
+    ble.stop_BLE(device["address"])
 
     db.set_new_status(device_id, 0)
     thread = conn_threads.get(device_id)
