@@ -75,7 +75,7 @@ if __name__ == "__main__":
         plot_select_var=ui.plot_3_select_var,
         plot_select_device=ui.plot_3_select_device
     ))
-
+  
     ui.plot_3_stop_btn.clicked.connect(lambda : utils.plot_stop_btn(
         plot=ui.plot3
     ))

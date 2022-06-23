@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -1644,6 +1644,36 @@ background-color: rgb(108, 5, 5);
      <item>
       <property name="text">
        <string>RMS</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Amp x</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Frec x</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Amp y</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Frec y</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Amp z</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Frec z</string>
       </property>
      </item>
     </widget>
