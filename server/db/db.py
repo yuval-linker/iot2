@@ -19,9 +19,7 @@ cursor = conn.cursor()
 db_lock = Lock()
 
 def commit():
-    db_lock.acquire()
     conn.commit()
-    db_lock.release()
 
 def close():
     db_lock.acquire()
@@ -30,10 +28,21 @@ def close():
 
 def with_commit(fun):
     def inner(*args, **kwargs):
+        db_lock.acquire()
         ret = fun(*args, **kwargs)
         commit()
+        db_lock.release()
         return ret
     return inner
+
+def with_lock(fun):
+    def inner(*args, **kwargs):
+        db_lock.acquire()
+        ret = fun(*args, **kwargs)
+        db_lock.release()
+        return ret
+    return inner
+        
 
 @with_commit
 def build():
@@ -41,15 +50,11 @@ def build():
         execute_script(BUILD_PATH)
 
 def execute(command, values):
-    db_lock.acquire()
     cursor.execute(command, dict(values))
-    db_lock.release()
 
 def execute_script(path):
-    db_lock.acquire()
     with open(path, 'r', encoding="utf-8") as script:
         cursor.executescript(script.read())
-    db_lock.release()
 
 def fetch_all(command, values):
     execute(command, dict(values))
@@ -75,6 +80,7 @@ def insert_esp32_data(**kwargs):
         values
     )
 
+@with_lock
 def get_esp32_data(id_device):
     return fetch_all(f"""
     SELECT * FROM esp32_data WHERE id_device=:id_device
@@ -132,6 +138,7 @@ def set_new_status(id_device, status):
         "id_device": id_device,
     })
 
+@with_lock
 def get_device_config(id_device):
     c = fetch_one(f"""
     SELECT * 
@@ -142,6 +149,7 @@ def get_device_config(id_device):
     )
     return {x: y for x,y in zip(CONFIG_FIELDS, c)}
 
+@with_lock
 def get_device_status(id_device):
     return fetch_one(f"""
     SELECT status 
@@ -151,6 +159,7 @@ def get_device_status(id_device):
     {"id_device": id_device}
     )[0]
 
+@with_lock
 def get_device_disc_time(id_device):
    return fetch_one(f"""
     SELECT discontinuous_time
@@ -160,6 +169,7 @@ def get_device_disc_time(id_device):
     {"id_device": id_device}
     )[0] 
 
+@with_lock
 def get_device_protocol(id_device):
    return fetch_one(f"""
     SELECT id_protocol

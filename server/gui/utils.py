@@ -5,6 +5,7 @@ from src import tcp_conn as tcp
 from src import udp_conn as udp
 from db import db
 
+from PyQt5.QtCore import QRunnable
 from threading import Thread
 
 config_mode_select_dict = {
@@ -38,10 +39,10 @@ plot_select_var_dict = {
     6: 17,
     7: 8,
     8: 9,
-    9: 10,
-    10: 11,
-    11: 12,
-    12: 13,
+    9: 12,
+    10: 10,
+    11: 13,
+    12: 11,
     13: 14,
 }
 
@@ -73,6 +74,7 @@ def search_esp32(**kwargs):
     plot_1_device_name_select.addItems(device_names)
     plot_2_device_name_select.addItems(device_names)
     plot_3_device_name_select.addItems(device_names)
+
 
 def config_btn(**kwargs):
     scanned_devices = kwargs["scanned_devices"]
@@ -137,31 +139,34 @@ def config_btn(**kwargs):
     
     # before we send the config we must update the status from
     # config_mode to the desired status.
+    print(f"DID {device_id} ST {status}")
     db.set_new_status(device_id, status)
     conf_thread.start()
     conf_thread.join()
     
 
-
     # once the esp is successfully configured, we begin the connection.
     if status == 21:
+        conf = db.get_device_config(device_id)
         thread = Thread(target=tcp.init_tcp_continous_server, args=(
-            str(kwargs["host_ip_addr_field"].toPlainText()),
-            int(kwargs["port_tcp_field"].toPlainText()),
+            str(conf["host_ip_addr"]),
+            int(conf["port_tcp"]),
             device_id,
             id_protocol,
         ))
     elif status == 22:
+        conf = db.get_device_config(device_id)
         thread = Thread(target=tcp.init_tcp_discontinous_server, args=(
-            str(kwargs["host_ip_addr_field"].toPlainText()),
-            int(kwargs["port_tcp_field"].toPlainText()),
+            str(conf["host_ip_addr"]),
+            int(conf["port_tcp"]),
             device_id,
             id_protocol,
         ))
     elif status == 23:
+        conf = db.get_device_config(device_id)
         sv = udp.ServerUdp(
-            host=str(kwargs["host_ip_addr_field"].toPlainText()),
-            sv_port=int(kwargs["port_udp_field"].toPlainText()),
+             str(conf["host_ip_addr"]),
+            int(conf["port_udp"]),
             id_device=device_id,
             id_protocol=id_protocol,
         )
@@ -182,7 +187,7 @@ def config_btn(**kwargs):
     conn_threads[device_id] = thread
     thread.start()
 
-    print("Configuring Done")
+    print(f"Configuring Done id device {device_id}")
 
 
 def reset_btn(**kwargs):
@@ -214,16 +219,29 @@ def plot_start_btn(**kwargs):
     plot.clear()
 
     p = plot.addPlot(row=0, col=0)
-    data = [d[var_id] for d in db.get_esp32_data(id_device=device_id)]
+    data = [d[var_id] for d in db.get_esp32_data(id_device=device_id) if d[var_id]]
+
     if var_id >= 15 and var_id <= 17:   # acc_x, acc_y, acc_z are encoded arrays
-        data = [statistics.mean(json.loads(d)) for d in data]   # we use the mean value.
+        data = json.loads(data[-1])   # we use the mean value.
     
     # x-axis
     x = range(len(data))
+
+    
 
     # plot!
     p.plot(x, data)  
     
 def plot_stop_btn(**kwargs):
     plot = kwargs["plot"]
-    plot.clean()
+    plot.clear()
+
+
+class Runnable(QRunnable):
+    def __init__(self, target, **kwargs):
+        super(Runnable, self).__init__()
+        self.target = target
+        self.kwargs = kwargs
+    
+    def run(self):
+        self.target(**self.kwargs)

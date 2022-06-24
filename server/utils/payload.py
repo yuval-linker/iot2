@@ -57,7 +57,7 @@ def decode_data(payload_dict, encoded_payload, id_protocol):
     
     payload_dict["temp"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
     start += 1 
-    payload_dict["press"] = struct.unpack("f", encoded_payload[start:start+4])[0]
+    payload_dict["press"] = int.from_bytes(encoded_payload[start:start+4], byteorder="big", signed=False)
     start += 4 
     payload_dict["hum"] = int.from_bytes(encoded_payload[start:start+1], byteorder="big", signed=False)
     start += 1 
@@ -101,8 +101,9 @@ def decode_data(payload_dict, encoded_payload, id_protocol):
         
     
 
-def decode_payload(encoded_payload):
+def decode_payload(encoded_payload, id_device):
     payload_dict = {}
     decode_header(payload_dict, encoded_payload)
+    payload_dict["id_device"] = id_device
     decode_data(payload_dict, encoded_payload, payload_dict["id_protocol"])
     return payload_dict

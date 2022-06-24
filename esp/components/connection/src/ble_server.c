@@ -504,6 +504,7 @@ void ble_server_init(uint16_t MTU)
     if (local_mtu_ret){
         ESP_LOGE(GATTS_TAG, "set local MTU failed, error code = %x", local_mtu_ret);
     }
+    ESP_LOGI(GATTS_TAG, "Started Server %s", DEVICE_NAME);
 }
 
 /**

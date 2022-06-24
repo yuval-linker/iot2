@@ -1,8 +1,13 @@
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QThreadPool
 from gui.ui import Ui_Dialog
 from gui import utils
-from server.gui.utils import plot_start_btn
 from src import ble_conn as ble
+
+def run_task(target, **kwargs):
+    pool = QThreadPool.globalInstance()
+    runnable = utils.Runnable(target, **kwargs)
+    pool.start(runnable)
 
 
 if __name__ == "__main__":
@@ -12,20 +17,22 @@ if __name__ == "__main__":
     ui = Ui_Dialog()
     ui.setupUi(Dialog)
     ble.start_BLE()
+    
 
     conn_threads = {}
     scanned_devices = []
+    
 
     #Botones
-    ui.search_esp32.clicked.connect(lambda : utils.search_esp32(
+    ui.search_esp32.clicked.connect(lambda : run_task(utils.search_esp32,
         scanned_devices=scanned_devices,
         esp32_select=ui.esp32_select,
         plot_1_device_name_select=ui.plot_1_device_name_select,
         plot_2_device_name_select=ui.plot_2_device_name_select,
-        plot_3_device_name_select=ui.plot_3_device_name_select
+        plot_3_device_name_select=ui.plot_3_device_name_select,
     ))
 
-    ui.config_btn.clicked.connect(lambda : utils.config_btn(
+    ui.config_btn.clicked.connect(lambda : run_task(utils.config_btn,
         scanned_devices=scanned_devices,
         conn_threads=conn_threads,
         esp32_select=ui.esp32_select,
@@ -54,7 +61,7 @@ if __name__ == "__main__":
     ui.plot_1_start_btn.clicked.connect(lambda : utils.plot_start_btn(
         plot=ui.plot1,
         plot_select_var=ui.plot_1_select_var,
-        plot_select_device=ui.plot_1_select_device
+        plot_select_device=ui.plot_1_device_name_select
     ))
 
     ui.plot_1_stop_btn.clicked.connect(lambda : utils.plot_stop_btn(
@@ -62,23 +69,23 @@ if __name__ == "__main__":
     ))
 
     ui.plot_2_start_btn.clicked.connect(lambda : utils.plot_start_btn(
-        plot=ui.plot2,
+        plot=ui.plot_2,
         plot_select_var=ui.plot_2_select_var,
-        plot_select_device=ui.plot_2_select_device
+        plot_select_device=ui.plot_2_device_name_select
     ))
 
     ui.plot_2_stop_btn.clicked.connect(lambda : utils.plot_stop_btn(
-        plot=ui.plot2
+        plot=ui.plot_2
     ))
 
     ui.plot_3_start_btn.clicked.connect(lambda : utils.plot_start_btn(
-        plot=ui.plot3,
+        plot=ui.plot_3,
         plot_select_var=ui.plot_3_select_var,
-        plot_select_device=ui.plot_3_select_device
+        plot_select_device=ui.plot_3_device_name_select
     ))
   
     ui.plot_3_stop_btn.clicked.connect(lambda : utils.plot_stop_btn(
-        plot=ui.plot3
+        plot=ui.plot_3,
     ))
 
     Dialog.show()

@@ -40,6 +40,7 @@ int tcp_client_connect(int host_ip, int port) {
   int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr_in6));
   if (err != 0) {
       ESP_LOGE(TCP_TAG, "Socket unable to connect: errno %d", errno);
+      tcp_socket_close(sock);
       return -1;
   }
   ESP_LOGI(TCP_TAG, "Successfully connected");

@@ -42,7 +42,7 @@ def init_tcp_continous_server(host, port, device_id, id_protocol):
                 else:
                     encoded_payload = conn.recv(MAX_PAYLOAD_SIZE)
 
-                decoded_payload = decode_payload(encoded_payload)
+                decoded_payload = decode_payload(encoded_payload, device_id)
 
                 current_status = db.get_device_status(device_id)
                 if decoded_payload['status'] != current_status:
@@ -82,7 +82,7 @@ def init_tcp_discontinous_server(host, port, id_device, id_protocol):
                 else:
                     encoded_payload = conn.recv(MAX_PAYLOAD_SIZE)
 
-                decoded_payload = decode_payload(encoded_payload)
+                decoded_payload = decode_payload(encoded_payload, id_device)
 
                 current_status = db.get_device_status(id_device)
                 if decoded_payload['status'] != current_status:

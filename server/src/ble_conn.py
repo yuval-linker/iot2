@@ -16,25 +16,25 @@ connections = {}
 esp_data = {}
 recv_data = {}
 
-def continous_callback(handle, value, address, msg_len):
+def continous_callback(handle, value, address, id_device, msg_len):
     global esp_data
     if value == BAD_NOTIFICATION:
         return
     if len(esp_data[address]) < msg_len:
         esp_data[address] += value
         return
-    payload_dict = payload.decode_payload(esp_data[address])
+    payload_dict = payload.decode_payload(esp_data[address], id_device)
     esp_data[address] = b''
     db.insert_esp32_data(**payload_dict)
 
-def discontinous_callback(handle, value, address, msg_len):
+def discontinous_callback(handle, value, address, id_device, msg_len):
     global recv_data, esp_data
     if value == BAD_NOTIFICATION:
         return
     if len(esp_data[address]) < msg_len:
         esp_data[address] += value
         return  
-    payload_dict = payload.decode_payload(esp_data[address])
+    payload_dict = payload.decode_payload(esp_data[address], id_device)
     esp_data[address] = b''
     db.insert_esp32_data(**payload_dict)
     recv_data[address] = True
@@ -48,7 +48,10 @@ def scan_esp() -> List[Dict]:
     try:
         nearby_devices = adapter.scan()
         nearby_esps = filter(lambda x: ("ESP32-" in x["name"] if x["name"] else False), nearby_devices)
-        return list(nearby_esps)
+        list_esps = list(nearby_esps)
+        list_esps.sort(key=lambda x: x["name"])
+        print(list_esps)
+        return list_esps
     except Exception as err:
         print(err)
 
@@ -74,7 +77,10 @@ def send_config_BLE(address: str, device_id: int) -> None:
         except Exception as err:
             print(err)
         finally:
-            device.disconnect()
+            try:
+                device.disconnect()
+            except Exception:
+                pass
         
 
 def recv_continous_BLE(address: str, id_device: int, id_protocol: int) -> None:
@@ -84,7 +90,12 @@ def recv_continous_BLE(address: str, id_device: int, id_protocol: int) -> None:
             connected = False
             connections[address] = True
             esp_data[address] = b''
-            con_callback = partial(continous_callback, address=address, msg_len=payload.PROTOCOL_LENGTH[id_protocol])
+            con_callback = partial(
+                continous_callback,
+                address=address,
+                id_device=id_device,
+                msg_len=payload.PROTOCOL_LENGTH[id_protocol],
+            )
             while not connected:
                 try:
                     device = connect_device(address)
@@ -109,7 +120,12 @@ def recv_discontinous_BLE(address: str, id_device: int, id_protocol: int) -> Non
     esp_data[address] = b''
     status = db.get_device_status(id_device)
     sleep_time = db.get_device_disc_time(id_device)
-    disc_callback = partial(discontinous_callback, address=address, msg_len=payload.PROTOCOL_LENGTH[id_protocol])
+    disc_callback = partial(
+        discontinous_callback,
+        address=address,
+        id_device=id_device,
+        msg_len=payload.PROTOCOL_LENGTH[id_protocol],
+    )
     while True:
         recv_data[address] = False
         connected = False

@@ -77,6 +77,7 @@ void tcp_config_task() {
   int len = tcp_client_recv(socket, recv_buffer, TCP_RECV_BUFFER_SIZE);
   if (len < 0) {
     ESP_LOGE(STATUS_TAG, "Failed to receive config through TCP");
+    tcp_socket_close(socket);
     return;
   }
 
@@ -387,15 +388,16 @@ void ble_discontinous_task() {
   read_int32_NVS(&sleep_time, DISC_TIME);
 
   // Wait for connection
-  while (!is_Aconnected) {
-    vTaskDelay(pdMS_TO_TICKS(10));
-  }
-  ESP_LOGI(STATUS_TAG, "BLE Connection established");
-
-  // Send messages until confirmation has been recieved
-  while (!write_EVT) {
-    ble_send_full_payload(BLE_DISCONTINOUS_STATUS, id_protocol, false);
-    ESP_LOGI(STATUS_TAG, "Sent data through BLE");
+  while (true) {
+    if (is_Aconnected) {
+      // Send messages until confirmation has been recieved
+      ESP_LOGI(STATUS_TAG, "BLE Connection established");
+      ble_send_full_payload(BLE_DISCONTINOUS_STATUS, id_protocol, false);
+      ESP_LOGI(STATUS_TAG, "Sent data through BLE");
+    }
+    if (write_EVT) {
+      break;
+    }
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 

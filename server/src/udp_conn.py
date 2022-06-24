@@ -64,12 +64,12 @@ class ServerUdp():
                         recv_msg += encoded_msg
                         recv_len -= len(encoded_msg)
                         addr = address
-                    encoded_msg = recv_msg
+                    encoded_payload = recv_msg
                 else:
                     encoded_payload, addr = s.recvfrom(MAX_PAYLOAD_SIZE)
 
                 print(f"Recieved data of ESP32 by {addr}")
-                decoded_payload = decode_payload(encoded_payload)
+                decoded_payload = decode_payload(encoded_payload, self.id_device)
                 
                 current_status = db.get_device_status(self.id_device)
                 if decoded_payload['status'] == current_status:
